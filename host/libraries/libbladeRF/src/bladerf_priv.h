@@ -264,6 +264,7 @@ bool version_less_than(struct bladerf_version *version,
                        unsigned int major, unsigned int minor,
                        unsigned int patch);
 
+<<<<<<< HEAD
 /**
  * Load a calibration table and apply its settings
  *
@@ -273,5 +274,26 @@ bool version_less_than(struct bladerf_version *version,
  * @return 0 on success, BLADERF_ERR_* on failure
  */
 int load_calibration_table(struct bladerf *dev, const char *filename);
+
+typedef uint64_t timestamp;
+
+struct bladerf_meta_header {
+    uint32_t rsvd;
+    struct {
+        uint32_t time_lo;
+        uint32_t time_hi;
+    };
+    uint32_t flags;
+};
+
+struct bladerf_superspeed_timestamp {
+    struct bladerf_meta_header header;
+    int16_t samples[512*2-8];
+};
+
+struct bladerf_highspeed_timestamp {
+    struct bladerf_meta_header header;
+    int16_t samples[256*2-8];
+};
 
 #endif
