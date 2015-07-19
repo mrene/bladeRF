@@ -19,6 +19,7 @@ function usage()
     echo "Supported revisions:"
     echo "    hosted"
     echo "    atsc_tx"
+    echo "    hosted_fft"
 
     # These revisions were for used for early prototyping and testing. They
     # require some work to get building with the current design. As such,
@@ -124,7 +125,7 @@ if [ "$rev" == "" ]; then
     exit 1
 fi
 
-if [ "$rev" != "hosted" ] && [ "$rev" != "atsc_tx" ]; then
+if [ "$rev" != "hosted" ] && [ "$rev" != "hosted_fft" ] && [ "$rev" != "atsc_tx" ]; then
     echo -e "\nError: Invalid revision (\"$rev\")\n" >&2
     usage
     exit 1

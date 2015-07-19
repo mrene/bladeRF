@@ -69,6 +69,9 @@ export_assignments
 # Create the hosted
 make_revision hosted
 
+# Create the hosted_fft
+make_revision hosted_fft
+
 # Create headless
 make_revision headless
 

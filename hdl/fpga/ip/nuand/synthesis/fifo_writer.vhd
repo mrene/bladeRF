@@ -14,6 +14,7 @@ entity fifo_writer is
 
     in_i                :   in      signed(15 downto 0) ;
     in_q                :   in      signed(15 downto 0) ;
+
     in_valid            :   in      std_logic ;
 
     fifo_usedw          :   in      std_logic_vector(11 downto 0) ;
