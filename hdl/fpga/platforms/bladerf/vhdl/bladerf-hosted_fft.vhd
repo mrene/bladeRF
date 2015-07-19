@@ -23,6 +23,9 @@ library ieee ;
     use ieee.numeric_std.all ;
     use ieee.math_real.all ;
     use ieee.math_complex.all ;
+    use work.fft_len.all;
+    use work.icpx.all;
+    use work.fft_support_pkg.all;
 
 architecture hosted_bladerf_fft of bladerf is
 
@@ -961,7 +964,9 @@ begin
         valid => rx_sample_fft_valid
     ) ;
 
-    rx_sample_fft_din <= cplx2icpx(complex'(rx_sample_corrected_i, rx_sample_corrected_q)) when rx_sample_corrected_valid else icpx_zero;
 
+    rx_sample_fft_din.Re <= rx_sample_corrected_i when rx_sample_corrected_valid else (others => '0');
+    rx_sample_fft_din.Im <= rx_sample_corrected_q when rx_sample_corrected_valid else (others => '0');
+    
 end architecture ; -- arch
 
