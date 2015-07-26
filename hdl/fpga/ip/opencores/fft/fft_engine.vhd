@@ -331,11 +331,11 @@ begin  -- fft_top_beh
 
  reorderer : entity work.dpram_fifo
   generic map (
-    FIFO_DEPTH => 4,
+    NUM_FRAMES => 4,
     ADDR_WIDTH => LOG2_FFT_LEN)
   port map (
     clk   => clk,
-    rst   => rst_n,
+    rst_n => rst_n,
 
     in_valid_a => started(LOG2_FFT_LEN),
     in_data_a => out0(LOG2_FFT_LEN-1),

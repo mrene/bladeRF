@@ -13,12 +13,12 @@ use work.all;
 
 entity dpram_fifo is
     generic (
-        constant FIFO_DEPTH : positive := 2;
+        constant NUM_FRAMES : positive := 2;
         constant ADDR_WIDTH : positive := 8
     );
     port ( 
         clk       : in  std_logic;
-        rst       : in  std_logic;
+        rst_n     : in  std_logic;
 
         -- Ram port A
         in_valid_a    : in std_logic;
@@ -68,7 +68,7 @@ architecture rtl of dpram_fifo is
         writing : std_logic;
     end record;
 
-    type fifo_mem_type is array (0 to FIFO_DEPTH - 1) of ram_t; 
+    type fifo_mem_type is array (0 to NUM_FRAMES - 1) of ram_t; 
     signal mem : fifo_mem_type;
 
 
@@ -77,12 +77,12 @@ architecture rtl of dpram_fifo is
     signal internal_new_delayed : std_logic;
 
     signal debug_tail_index : natural range 0 to (2 ** ADDR_WIDTH) - 1; --std_logic_vector(ADDR_WIDTH - 1 downto 0);
-    signal debug_head : natural range 0 to FIFO_DEPTH - 1;
-    signal debug_tail : natural range 0 to FIFO_DEPTH - 1;
+    signal debug_head : natural range 0 to NUM_FRAMES - 1;
+    signal debug_tail : natural range 0 to NUM_FRAMES - 1;
 
 
-    signal debug_tail_delayed : natural range 0 to FIFO_DEPTH - 1;
-    signal debug_tail_delayed2 : natural range 0 to FIFO_DEPTH - 1;
+    signal debug_tail_delayed : natural range 0 to NUM_FRAMES - 1;
+    signal debug_tail_delayed2 : natural range 0 to NUM_FRAMES - 1;
     signal debug_tail_index_delayed : natural range 0 to (2 ** ADDR_WIDTH) - 1; --std_logic_vector(ADDR_WIDTH - 1 downto 0);
 
 begin
@@ -111,7 +111,7 @@ begin
           mem(i).we_a   <=  in_valid_a when mem(i).writing = '1' else '0';
 
 
-          mem(i).addr_a <=  in_addr_a           when mem(i).writing = '1' else
+          mem(i).addr_a <=  in_addr_a when mem(i).writing = '1' else
                             std_logic_vector(to_unsigned(debug_tail_index_delayed, ADDR_WIDTH)) when mem(i).reading = '1' else
                             std_logic_vector(to_unsigned(2 ** ADDR_WIDTH - 2, ADDR_WIDTH));
                             
@@ -119,7 +119,7 @@ begin
 
           mem(i).we_b   <= in_valid_b when mem(i).writing = '1' else  '0';
 
-          mem(i).addr_b <=  in_addr_b        when mem(i).writing = '1' else
+          mem(i).addr_b <=  in_addr_b when mem(i).writing = '1' else
                             std_logic_vector(to_unsigned(debug_tail_index_delayed+1, ADDR_WIDTH)) when mem(i).reading = '1' else
                             (others => '1');
                             
@@ -133,9 +133,9 @@ begin
     out_data_a <= stlv2icpx(mem(debug_tail_delayed2).q_a);
     out_data_b <= stlv2icpx(mem(debug_tail_delayed2).q_b);
 
-    delay_output_signals : process(clk, rst)
+    delay_output_signals : process(clk, rst_n)
     begin
-        if rst = '0' then
+        if rst_n = '0' then
             out_new <= '0';
             out_valid <= '0';
         elsif rising_edge(clk) then
@@ -152,79 +152,77 @@ begin
     ---- Memory Pointer Process
     fifo_proc : process (clk)
         -- Indexes
-        variable head : natural range 0 to FIFO_DEPTH - 1;
-        variable tail : natural range 0 to FIFO_DEPTH - 1;
+        variable head : natural range 0 to NUM_FRAMES - 1;
+        variable tail : natural range 0 to NUM_FRAMES - 1;
         -- Read position
         variable tail_index : natural range 0 to (2 ** ADDR_WIDTH) - 1;
         variable looped : boolean;
     begin
-        if (rising_edge(clk)) then
-            if rst = '0' then
-                head := 0;
-                tail := 0;
-                looped := false;
-                full  <= '0';
-                empty <= '1';
-                internal_valid <= '0';
-                internal_new <= '0';
+        if rst_n = '0' then
+            head := 0;
+            tail := 0;
+            looped := false;
+            full  <= '0';
+            empty <= '1';
+            internal_valid <= '0';
+            internal_new <= '0';
 
-                debug_head <= 0;
-                debug_tail <= 0;
-            else
-                internal_valid <= '0';
-                internal_new <= '0';
+            debug_head <= 0;
+            debug_tail <= 0;
+        elsif (rising_edge(clk)) then
+            internal_valid <= '0';
+            internal_new <= '0';
 
-                -- Move the write head once the buffer is done
-                if (in_commit = '1') then
-                    if ((looped = false) or (head /= tail)) then
-                        if (head = FIFO_DEPTH - 1) then
-                            head := 0;
-                            looped := true;
-                        else
-                            head := head + 1;
-                        end if;
-                    end if;
-                end if;
-
-                if (read_enable = '1') then
-                    if ((looped = true) or (head /= tail)) then
-                        internal_valid <= '1';
-                        
-                        if (tail_index = 0) then 
-                            tail_index := tail_index + 2;
-                        elsif (tail_index = (2 ** ADDR_WIDTH) - 2) then
-                            -- Move to next element
-                            if (tail = FIFO_DEPTH - 1) then
-                                tail := 0;
-                                looped := false;
-                            else
-                                tail := tail + 1;
-                            end if;
-
-                            internal_new <= '1';
-                            tail_index := 0;
-                        else
-                            tail_index := tail_index + 2;
-                        end if;
-                    end if;
-                end if;
-                
-                -- Update Empty and Full flags
-                if (head = tail) then
-                    if looped then
-                        full <= '1';
+            -- Move the write head once the buffer is done
+            if (in_commit = '1') then
+                if ((looped = false) or (head /= tail)) then
+                    if (head = NUM_FRAMES - 1) then
+                        head := 0;
+                        looped := true;
                     else
-                        empty <= '1';
+                        head := head + 1;
                     end if;
-                else
-                    empty   <= '0';
-                    full    <= '0';
                 end if;
-
-                debug_tail_index <= tail_index;
-                debug_head <= head;
-                debug_tail <= tail;
             end if;
+
+            if (read_enable = '1') then
+                if ((looped = true) or (head /= tail)) then
+                    internal_valid <= '1';
+                    
+                    if (tail_index = 0) then 
+                        tail_index := tail_index + 2;
+                    elsif (tail_index = (2 ** ADDR_WIDTH) - 2) then
+                        -- Move to next element
+                        if (tail = NUM_FRAMES - 1) then
+                            tail := 0;
+                            looped := false;
+                        else
+                            tail := tail + 1;
+                        end if;
+
+                        internal_new <= '1';
+                        tail_index := 0;
+                    else
+                        tail_index := tail_index + 2;
+                    end if;
+                end if;
+            end if;
+            
+            -- Update Empty and Full flags
+            if (head = tail) then
+                if looped then
+                    full <= '1';
+                else
+                    empty <= '1';
+                end if;
+            else
+                empty   <= '0';
+                full    <= '0';
+            end if;
+
+            debug_tail_index <= tail_index;
+            debug_head <= head;
+            debug_tail <= tail;
         end if;
     end process;
 
