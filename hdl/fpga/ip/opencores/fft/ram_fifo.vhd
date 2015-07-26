@@ -4,7 +4,6 @@
 library ieee;
 library work;
 use ieee.std_logic_1164.all;
-use ieee.std_logic_unsigned.all;
 use ieee.numeric_std.all;
 use work.fft_len.all;
 use work.icpx.all;
@@ -91,7 +90,7 @@ begin
         U_ramfifo_ram : entity work.dp_ram_scl
           generic map (
             ADDR_WIDTH => ADDR_WIDTH,
-            DATA_WIDTH => ICPX_BV_LEN
+            DATA_WIDTH => mem(i).data_a'length
           ) port map (
             clk     => clk,
             
