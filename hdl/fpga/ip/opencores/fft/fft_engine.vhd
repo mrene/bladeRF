@@ -40,7 +40,8 @@ entity fft_engine is
     valid     : out std_logic;
     --saddr     : out unsigned(LOG2_FFT_LEN-2 downto 0);
     --saddr_rev : out unsigned(LOG2_FFT_LEN-2 downto 0);
-    sout      : out icpx_number;
+    sout_a     : out icpx_number;
+    sout_b    : out icpx_number;
     sout_new  : out std_logic
 
     --sout0     : out icpx_number;        -- spectrum output
@@ -330,7 +331,7 @@ begin  -- fft_top_beh
 
  reorderer : entity work.dpram_fifo
   generic map (
-    FIFO_DEPTH => 10,
+    FIFO_DEPTH => 4,
     ADDR_WIDTH => LOG2_FFT_LEN)
   port map (
     clk   => clk,
@@ -348,7 +349,8 @@ begin  -- fft_top_beh
 
     read_enable => '1',
 
-    out_data => sout,
+    out_data_a => sout_a,
+    out_data_b => sout_b,
     out_valid => valid,
     out_new => sout_new,
 

@@ -45,7 +45,7 @@ architecture beh1 of fft_engine_tb is
   type T_OUT_DATA is array (0 to FFT_LEN-1) of icpx_number;
 
   signal dptr                 : integer range 0 to 15;
-  signal din, sout            : icpx_number;
+  signal din, sout_a, sout_b  : icpx_number;
   signal saddr, saddr_rev     : unsigned(LOG2_FFT_LEN-2 downto 0);
   signal end_of_data, end_sim : boolean := false;
   signal valid, sout_new      : std_logic := '0';
@@ -60,8 +60,9 @@ architecture beh1 of fft_engine_tb is
       valid     : out std_logic;
       --saddr     : out unsigned(LOG2_FFT_LEN-2 downto 0);
       --saddr_rev : out unsigned(LOG2_FFT_LEN-2 downto 0);
-      sout     : out icpx_number;
-      sout_new : out std_vector
+      sout_a     : out icpx_number;
+      sout_b     : out icpx_number;
+      sout_new : out std_logic
       );
   end component fft_engine;
 
@@ -93,7 +94,8 @@ begin  -- beh1
       rst_n     => rst_n,
       clk       => clk,
       din       => din,
-      sout      => sout,
+      sout_a      => sout_a,
+      sout_b      => sout_b,
       sout_new  => sout_new,
       valid     => valid
   );
@@ -118,6 +120,10 @@ begin  -- beh1
     wait until clk = '1';
     rst_n <= '1';
     dptr  <= 0;
+        
+    write(output_line, string'("VHDL GENERATED"));
+    writeline(data_out, output_line);
+
     l1 : while not end_sim loop
       if not endfile(data_in) then
         readline(data_in, input_line);
@@ -139,9 +145,14 @@ begin  -- beh1
       end if;
 
       if (valid = '1') then
-        write(output_line, integer'image(to_integer(sout.re)));
+        write(output_line, integer'image(to_integer(sout_a.re)));
         write(output_line, sep);
-        write(output_line, integer'image(to_integer(sout.im)));
+        write(output_line, integer'image(to_integer(sout_a.im)));
+        writeline(data_out, output_line);
+
+        write(output_line, integer'image(to_integer(sout_b.re)));
+        write(output_line, sep);
+        write(output_line, integer'image(to_integer(sout_b.im)));
         writeline(data_out, output_line);
       end if;
 

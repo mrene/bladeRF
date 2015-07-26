@@ -715,7 +715,7 @@ static const char *lnagain2str(bladerf_lna_gain gain)
         case BLADERF_LNA_GAIN_MID:
             return "Mid (3dB)";
         default:
-            return "Uknown";
+            return "Unknown";
     }
 }
 
