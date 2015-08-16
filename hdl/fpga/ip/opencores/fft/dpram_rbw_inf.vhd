@@ -13,19 +13,23 @@ entity dp_ram_rbw_scl is
     ADDR_WIDTH : integer := 10
     );
   port (
--- common clock
+    -- common clock
     clk    : in  std_logic;
     -- Port A
     we_a   : in  std_logic;
+    re_a   : in  std_logic;
     addr_a : in  std_logic_vector(ADDR_WIDTH-1 downto 0);
     data_a : in  std_logic_vector(DATA_WIDTH-1 downto 0);
     q_a    : out std_logic_vector(DATA_WIDTH-1 downto 0);
+    q_a_valid : out std_logic;
 
     -- Port B
     we_b   : in  std_logic;
+    re_b   : in  std_logic;
     addr_b : in  std_logic_vector(ADDR_WIDTH-1 downto 0);
     data_b : in  std_logic_vector(DATA_WIDTH-1 downto 0);
-    q_b    : out std_logic_vector(DATA_WIDTH-1 downto 0)
+    q_b    : out std_logic_vector(DATA_WIDTH-1 downto 0);
+    q_b_valid : out std_logic
     );
 end dp_ram_rbw_scl;
 
@@ -40,6 +44,7 @@ begin
   begin
     if(clk'event and clk = '1') then
       q_a <= mem(conv_integer(addr_a));
+
       if(we_a = '1') then
         mem(conv_integer(addr_a)) := data_a;
       end if;
@@ -51,10 +56,28 @@ begin
   begin
     if(clk'event and clk = '1') then
       q_b <= mem(conv_integer(addr_b));
+
       if(we_b = '1') then
         mem(conv_integer(addr_b)) := data_b;
       end if;
     end if;
   end process;
 
+
+  process(clk)
+  begin
+    if(clk'event and clk = '1') then
+        if (re_a = '1') then
+          q_a_valid <= '1';
+        else 
+          q_a_valid <= '0';
+        end if;
+      
+        if (re_b = '1') then
+          q_b_valid <= '1';
+        else
+          q_b_valid <= '0';
+        end if;
+    end if;
+  end process;
 end rtl;

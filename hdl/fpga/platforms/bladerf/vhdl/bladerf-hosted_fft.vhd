@@ -254,6 +254,7 @@ architecture hosted_bladerf_fft of bladerf is
     signal rx_sample_fft_a : icpx_number;
     signal rx_sample_fft_b : icpx_number;
     signal rx_sample_fft_valid : std_logic;
+    signal fft_reset : std_logic;
 
     signal led1_blink : std_logic;
 
@@ -976,17 +977,19 @@ begin
 
     U_rx_fft : entity work.fft_engine
     generic map (
-        LOG2_FFT_LEN => LOG2_FFT_LEN)
+        LOG2_FFT_LEN => 10)
     port map (
-        rst_n => not rx_reset,
+        rst_n => fft_reset,
         clk => rx_clock,
         din => rx_sample_fft_din,
+        din_valid => rx_sample_corrected_valid,
         sout_a => rx_sample_fft_a,
         sout_b => rx_sample_fft_b,
-        sout_new => open,
+        out_sob => open,
         valid => rx_sample_fft_valid
     ) ;
 
+    fft_reset <= '0' when (rx_reset = '1' or rx_enable = '0') else '1';
 
     rx_sample_fft_din.Re <= rx_sample_corrected_i when rx_sample_corrected_valid else (others => '0');
     rx_sample_fft_din.Im <= rx_sample_corrected_q when rx_sample_corrected_valid else (others => '0');

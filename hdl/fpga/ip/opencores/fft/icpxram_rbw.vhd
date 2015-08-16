@@ -39,15 +39,19 @@ entity dp_ram_rbw_icpx is
     clk    : in  std_logic;
     -- Port A
     we_a   : in  std_logic;
+    re_a   : in  std_logic;
     addr_a : in  std_logic_vector(ADDR_WIDTH-1 downto 0);
     data_a : in  icpx_number;
     q_a    : out icpx_number;
+    q_a_valid : out std_logic;
 
     -- Port B
     we_b   : in  std_logic;
+    re_b   : in  std_logic;
     addr_b : in  std_logic_vector(ADDR_WIDTH-1 downto 0);
     data_b : in  icpx_number;
-    q_b    : out icpx_number
+    q_b    : out icpx_number;
+    q_b_valid : out std_logic
     );
 end dp_ram_rbw_icpx;
 
@@ -64,14 +68,18 @@ architecture rtl of dp_ram_rbw_icpx is
       ADDR_WIDTH : integer);
     port (
       clk    : in  std_logic;
+      re_a   : in  std_logic;
       we_a   : in  std_logic;
       addr_a : in  std_logic_vector(ADDR_WIDTH-1 downto 0);
       data_a : in  std_logic_vector(DATA_WIDTH-1 downto 0);
       q_a    : out std_logic_vector(DATA_WIDTH-1 downto 0);
+      q_a_valid : out std_logic;
       we_b   : in  std_logic;
+      re_b   : in  std_logic;
       addr_b : in  std_logic_vector(ADDR_WIDTH-1 downto 0);
       data_b : in  std_logic_vector(DATA_WIDTH-1 downto 0);
-      q_b    : out std_logic_vector(DATA_WIDTH-1 downto 0));
+      q_b    : out std_logic_vector(DATA_WIDTH-1 downto 0);
+      q_b_valid : out std_logic);
   end component;
   
 begin
@@ -83,13 +91,17 @@ begin
     port map (
       clk    => clk,
       we_a   => we_a,
+      re_a   => re_a,
       addr_a => addr_a,
       data_a => s_data_a,
       q_a    => s_q_a,
+      q_a_valid => q_a_valid,
       we_b   => we_b,
+      re_b   => re_b,
       addr_b => addr_b,
       data_b => s_data_b,
-      q_b    => s_q_b);
+      q_b    => s_q_b,
+      q_b_valid => q_b_valid);
 
   s_data_a <= icpx2stlv(data_a);
   s_data_b <= icpx2stlv(data_b);

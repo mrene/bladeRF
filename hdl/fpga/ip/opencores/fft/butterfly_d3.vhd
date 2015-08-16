@@ -37,11 +37,14 @@ entity butterfly is
     -- Input data
     din0  : in  icpx_number;
     din1  : in  icpx_number;
+    din_valid : in std_logic;
     -- Twiddle factor
     tf    : in  icpx_number;
     -- Output data: real and imaginary parts
     dout0 : out icpx_number;
     dout1 : out icpx_number;
+    valid : out std_logic;
+
     -- System interface
     clk   : in  std_logic;
     rst_n : in  std_logic
@@ -60,6 +63,8 @@ architecture beh1 of butterfly is
   signal stf, stf_d0        : icpx_number;
   type T_DELIN is array (1 to LATENCY) of ICPX_NUMBER;
   signal vin0, vin1, vtf    : T_DELIN := (others => icpx_zero);
+
+  signal valid_del, valid_del2 : std_logic;
   
 begin  -- beh1
   -- If requested, we introduce latency on the input
@@ -70,25 +75,32 @@ begin  -- beh1
       vin0  <= (others => icpx_zero);
       vin1  <= (others => icpx_zero);
       vtf   <= (others => icpx_zero);
+      valid_del  <= '0';
+      valid_del2 <= '0';
     elsif clk'event and clk = '1' then  -- rising clock edge
       -- delayed by 1 clock
-      vdr1     <= resize(din0.re, ICPX_WIDTH+1) - resize(din1.re, ICPX_WIDTH+1);
-      vdi1     <= resize(din0.im, ICPX_WIDTH+1) - resize(din1.im, ICPX_WIDTH+1);
-      vdr0     <= resize(din0.re, ICPX_WIDTH+1) + resize(din1.re, ICPX_WIDTH+1);
-      vdi0     <= resize(din0.im, ICPX_WIDTH+1) + resize(din1.im, ICPX_WIDTH+1);
-      stf_d0   <= tf;
+      vdr1      <= resize(din0.re, ICPX_WIDTH+1) - resize(din1.re, ICPX_WIDTH+1);
+      vdi1      <= resize(din0.im, ICPX_WIDTH+1) - resize(din1.im, ICPX_WIDTH+1);
+      vdr0      <= resize(din0.re, ICPX_WIDTH+1) + resize(din1.re, ICPX_WIDTH+1);
+      vdi0      <= resize(din0.im, ICPX_WIDTH+1) + resize(din1.im, ICPX_WIDTH+1);
+      stf_d0    <= tf;
+      valid_del <= din_valid;
+
       -- delayed by 2 clocks
-      vdr0_d   <= vdr0;
-      vdi0_d   <= vdi0;
-      sout1r_a <= vdr1 * stf_d0.re;
-      sout1r_b <= vdi1 * stf_d0.im;
-      sout1i_a <= vdr1 * stf_d0.im;
-      sout1i_b <= vdi1 * stf_d0.re;
+      vdr0_d     <= vdr0;
+      vdi0_d     <= vdi0;
+      sout1r_a   <= vdr1 * stf_d0.re;
+      sout1r_b   <= vdi1 * stf_d0.im;
+      sout1i_a   <= vdr1 * stf_d0.im;
+      sout1i_b   <= vdi1 * stf_d0.re;
+      valid_del2 <= valid_del;
+
       -- delayed by 3 clocks
       vdr0_d2  <= vdr0_d;
       vdi0_d2  <= vdi0_d;
       sout1r   <= sout1r_a - sout1r_b;
       sout1i   <= sout1i_a + sout1i_b;
+      valid    <= valid_del2;
     end if;
   end process p1;
   dout1.re <= resize(sout1r(2*ICPX_WIDTH-1 downto ICPX_WIDTH-1), ICPX_WIDTH);

@@ -30,19 +30,20 @@ use work.fft_support_pkg.all;
 
 entity fft_engine is
   generic (
-    LOG2_FFT_LEN : integer := 4);       -- Defines order of FFT
+    LOG2_FFT_LEN : integer := 10);       -- Defines order of FFT
   port (
     -- System interface
     rst_n     : in  std_logic;
     clk       : in  std_logic;
     -- Input memory interface
     din       : in  icpx_number;        -- data input
+    din_valid : in std_logic;
     valid     : out std_logic;
     --saddr     : out unsigned(LOG2_FFT_LEN-2 downto 0);
     --saddr_rev : out unsigned(LOG2_FFT_LEN-2 downto 0);
     sout_a     : out icpx_number;
     sout_b    : out icpx_number;
-    sout_new  : out std_logic
+    out_sob  : out std_logic
 
     --sout0     : out icpx_number;        -- spectrum output
     --sout1     : out icpx_number         -- spectrum output
@@ -123,11 +124,16 @@ architecture fft_engine_beh of fft_engine is
 
   type T_FFT_DATA_ARRAY is array (LOG2_FFT_LEN downto 0) of icpx_number;
   signal in0, in1, out0, out1, tft : T_FFT_DATA_ARRAY;
-  signal r_din0, r_din1, wf0, wf1  : icpx_number := icpx_zero;
 
-  signal s_saddr, dptr0     : unsigned(LOG2_FFT_LEN-2 downto 0);
+  type T_FFT_VALID_ARRAY is array (LOG2_FFT_LEN downto 0) of std_logic;
+  signal valid_in, valid_out : T_FFT_VALID_ARRAY := (others => '0');
+
+  signal r_din0, r_din1, wf0, wf1  : icpx_number := icpx_zero;
+  signal r_din_valid : std_logic;
+
+  signal s_saddr, dptr0, start_counter     : unsigned(LOG2_FFT_LEN-2 downto 0);
   signal start0_del         : integer range 0 to MULT_LATENCY := 0;
-  signal start0, start0_pre : std_logic                       := '0';
+  signal start0, start0_pre, start0_pre2 : std_logic          := '0';
 
 
   signal started  : std_logic_vector(LOG2_FFT_LEN downto 0) := (others => '0');
@@ -136,7 +142,8 @@ architecture fft_engine_beh of fft_engine is
   type T_FFT_INTS is array (0 to LOG2_FFT_LEN) of integer;
   signal next_delay  : T_FFT_INTS := (others => 0);
   signal step_bf     : T_FFT_INTS := (others => 0);
-  signal start_delay : T_FFT_INTS := (others => 0);
+  signal start_delay_local : T_FFT_INTS := (others => 0);
+  signal start_delay_next : T_FFT_INTS := (others => 0);
 
   signal in_addr_a : std_logic_vector(LOG2_FFT_LEN - 1 downto 0);
   signal in_addr_b : std_logic_vector(LOG2_FFT_LEN - 1 downto 0);
@@ -150,6 +157,8 @@ architecture fft_engine_beh of fft_engine is
 
   signal internal_valid : std_logic;
   signal in_commit      : std_logic;
+
+  signal ram_valid : std_logic;
 
 begin  -- fft_top_beh
 
@@ -166,15 +175,21 @@ begin  -- fft_top_beh
       ADDR_WIDTH => LOG2_FFT_LEN-1)
     port map (
       clk    => clk,
-      we_a   => '1',
+      we_a   => din_valid,
+      re_a   => din_valid,  -- Don't read if the current sample isn't valid
       addr_a => std_logic_vector(dptr0),
       data_a => din,
       q_a    => r_din0,
+      q_a_valid => open,
       we_b   => '0',
+      re_b   => '0',
       addr_b => std_logic_vector(dptr0),
       data_b => din,
-      q_b    => open);
+      q_b    => open,
+      q_b_valid => open);
 
+
+  ram_valid <= din_valid when started(0) = '1' else '0';
 
   -- Process reading the input data (directly, and from delay line)
   -- Additionally we consider the delay associated with multiplication
@@ -183,16 +198,26 @@ begin  -- fft_top_beh
   begin  -- process st2
     if rst_n = '0' then                 -- asynchronous reset (active low)
       dptr0  <= (others => '0');
+      start_counter <= (others => '0');
       r_din1 <= icpx_zero;
+      r_din_valid <= '0';
       start0 <= '0';
     elsif clk'event and clk = '1' then  -- rising clock edge
-      r_din1 <= din;
-      if dptr0 < (2**(LOG2_FFT_LEN-1))-1 then
-        dptr0 <= dptr0+1;
+      if start0_pre = '1' then
+        r_din_valid <= din_valid;
       else
-        dptr0      <= (others => '0');
-        start0_pre <= '1';
+        r_din_valid <= '0';
       end if;
+      if (din_valid = '1') then
+        r_din1 <= din;
+        if dptr0 < (2**(LOG2_FFT_LEN-1))-1 then
+          dptr0 <= dptr0+1;
+        else
+          dptr0      <= (others => '0');
+          start0_pre <= '1';
+        end if;
+      end if;
+
       if start0_pre = '1' then
         if start0_del = MULT_LATENCY-1 then
           start0 <= '1';
@@ -206,7 +231,7 @@ begin  -- fft_top_beh
   -- Process providing the values of the window function
   mw1 : process (clk) is
   begin  -- process mw1
-    if clk'event and clk = '1' then     -- rising cloc§k edge
+    if clk'event and clk = '1' then     -- rising clock edge
       wf0 <= window_function(to_integer(dptr0));
       wf1 <= window_function(to_integer(dptr0)+FFT_LEN/2);
     end if;
@@ -216,18 +241,22 @@ begin  -- fft_top_beh
     generic map (
       MULT_LATENCY => MULT_LATENCY)
     port map (
+      din_valid => r_din_valid,
       din0 => r_din0,
       din1 => wf0,
       dout => in0(0),
+      valid => valid_in(0),
       rst_n => rst_n,
       clk  => clk);
   icpx_mul_2 : entity work.icpx_mul
     generic map (
       MULT_LATENCY => MULT_LATENCY)
     port map (
+      din_valid => r_din_valid,
       din0 => r_din1,
       din1 => wf1,
       dout => in1(0),
+      valid => open, -- Same as icpx_mul_1
       rst_n => rst_n,
       clk  => clk);
 
@@ -248,9 +277,11 @@ begin  -- fft_top_beh
     port map (
       din0  => in0(st),
       din1  => in1(st),
+      din_valid => valid_in(st),
       tf    => tft(st),
       dout0 => out0(st),
       dout1 => out1(st),
+      valid => valid_out(st),
       clk   => clk,
       rst_n => rst_n
       );
@@ -264,24 +295,40 @@ begin  -- fft_top_beh
     begin  -- process
       if rst_n = '0' then                 -- asynchronous reset (active low)
         step_bf(st)     <= 0;
-        start_delay(st) <= 0;
+        start_delay_local(st) <= 0;
+        start_delay_next(st) <= 0;
         start_dr(st)    <= '0';
       elsif clk'event and clk = '1' then  -- rising clock edge
         if started(st) = '1' then
-          if start_delay(st) = BF_DELAY then
+
+          if start_delay_local(st) = BF_DELAY-1 then
             start_dr(st) <= '1';          -- start the "data switch"
-          end if;
-          if start_delay(st) = BF_DELAY+next_delay(st) then
-            started(st+1) <= '1';         -- start the next stage
-          end if;
-          if start_delay(st) /= BF_DELAY+next_delay(st) then
-            start_delay(st) <= start_delay(st)+1;
-          end if;
-          if step_bf(st) < STEP_BF_LIMIT then
-            step_bf(st) <= step_bf(st) + 1;
           else
-            step_bf(st) <= 0;
+            start_delay_local(st) <= start_delay_local(st) + 1;
           end if;
+
+          -- Only count samples when the input is valid
+          if start_dr(st) = '1' and valid_out(st) = '1' then
+            if start_delay_next(st) = next_delay(st) then
+              started(st+1) <= '1';         -- start the next stage
+            end if;
+
+            if start_delay_next(st) /= next_delay(st) then
+              start_delay_next(st) <= start_delay_next(st)+1;
+            end if;
+
+          end if;
+
+          -- This sets the right twiddle factor - only change step
+          -- when that specific stage has a valid input sample
+          if valid_in(st) = '1' then
+            if step_bf(st) < STEP_BF_LIMIT then
+              step_bf(st) <= step_bf(st) + 1;
+            else
+              step_bf(st) <= 0;
+            end if;
+          end if;
+
         end if;
       end if;
     end process;
@@ -303,11 +350,13 @@ begin  -- fft_top_beh
         port map (
           in0    => out0(st),
           in1    => out1(st),
+          in_valid => valid_out(st),
           out0   => in0(st+1),
           out1   => in1(st+1),
+          valid  => valid_in(st+1),
           enable => start_dr(st),
           rst_n  => rst_n,
-          clk    => clk);      
+          clk    => clk);
     end generate i3;
     -- In the last stage, we simply count the output samples
     i4 : if st = LOG2_FFT_LEN-1 generate
@@ -316,7 +365,7 @@ begin  -- fft_top_beh
         if rst_n = '0' then                 -- asynchronous reset (active low)
           s_saddr <= (others => '0');
         elsif clk'event and clk = '1' then  -- rising clock edge
-          if start_dr(st) = '1' then
+          if start_dr(st) = '1' and valid_out(st) = '1' then
             if s_saddr = FFT_LEN/2-1 then
               s_saddr <= (others => '0');
             else
@@ -337,11 +386,11 @@ begin  -- fft_top_beh
     clk   => clk,
     rst_n => rst_n,
 
-    in_valid_a => started(LOG2_FFT_LEN),
+    in_valid_a => valid_out(LOG2_FFT_LEN-1),
     in_data_a => out0(LOG2_FFT_LEN-1),
     in_addr_a => in_addr_a,
 
-    in_valid_b => started(LOG2_FFT_LEN),
+    in_valid_b => valid_out(LOG2_FFT_LEN-1),
     in_data_b => out1(LOG2_FFT_LEN-1),
     in_addr_b => in_addr_b,
 
@@ -352,7 +401,7 @@ begin  -- fft_top_beh
     out_data_a => sout_a,
     out_data_b => sout_b,
     out_valid => valid,
-    out_new => sout_new,
+    out_sob => out_sob,
 
     empty => open,
     full => open
@@ -364,8 +413,11 @@ begin  -- fft_top_beh
   sout0     <= out0(LOG2_FFT_LEN-1);
   sout1     <= out1(LOG2_FFT_LEN-1);
 
+  sout_a <= out0(LOG2_FFT_LEN-1);
+  sout_b <= out1(LOG2_FFT_LEN-1);
 
-  in_commit <= '1' when (s_saddr = (2 ** (LOG2_FFT_LEN-1) - 1)) else '0';
+
+  in_commit <= '1' when (s_saddr = (2 ** (LOG2_FFT_LEN-1) - 1)) and valid_out(LOG2_FFT_LEN-1) = '1' else '0';
   
   in_addr_a <= '0' & std_logic_vector(saddr_rev);
   in_addr_b <= '1' & std_logic_vector(saddr_rev);
