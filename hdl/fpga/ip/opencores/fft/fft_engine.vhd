@@ -413,8 +413,8 @@ begin  -- fft_top_beh
   sout0     <= out0(LOG2_FFT_LEN-1);
   sout1     <= out1(LOG2_FFT_LEN-1);
 
-  sout_a <= out0(LOG2_FFT_LEN-1);
-  sout_b <= out1(LOG2_FFT_LEN-1);
+  --sout_a <= out0(LOG2_FFT_LEN-1);
+  --sout_b <= out1(LOG2_FFT_LEN-1);
 
 
   in_commit <= '1' when (s_saddr = (2 ** (LOG2_FFT_LEN-1) - 1)) and valid_out(LOG2_FFT_LEN-1) = '1' else '0';
