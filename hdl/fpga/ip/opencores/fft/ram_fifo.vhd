@@ -122,7 +122,7 @@ begin
 
           mem(i).addr_a <=  in_addr_a when mem(i).writing = '1' else
                             std_logic_vector(to_unsigned(debug_tail_index, ADDR_WIDTH)) when mem(i).reading = '1' else
-                            std_logic_vector(to_unsigned(2 ** ADDR_WIDTH - 2, ADDR_WIDTH));
+                            std_logic_vector(to_unsigned(2 ** ADDR_WIDTH - 1, ADDR_WIDTH));
                             
           mem(i).data_a <= in_data_a when mem(i).writing = '1' else icpx_zero;
 
@@ -138,7 +138,7 @@ begin
           mem(i).reading <= '1' when s_empty = '0' and ((debug_tail_delayed = i) or (debug_tail = i)) else '0';
 
           mem(i).re_a <= mem(i).reading;
-          mem(i).re_b <= mem(i).reading;
+          mem(i).re_b <= '0'; --mem(i).reading;
     end generate ;
 
     -- Map output data directly from tail ram's A port
@@ -146,9 +146,11 @@ begin
                   mem(debug_tail).q_a when mem(debug_tail).q_a_valid = '1' else
                   icpx_zero;
 
-    out_data_b <= mem(debug_tail_delayed).q_b when mem(debug_tail_delayed).q_b_valid = '1' else
-                  mem(debug_tail).q_b  when mem(debug_tail).q_b_valid = '1' else
-                  icpx_zero;
+    --out_data_b <= mem(debug_tail_delayed).q_b when mem(debug_tail_delayed).q_b_valid = '1' else
+    --              mem(debug_tail).q_b  when mem(debug_tail).q_b_valid = '1' else
+    --              icpx_zero;
+
+    out_data_b <= icpx_zero;
 
     out_valid <= '1' when mem(debug_tail_delayed).q_a_valid = '1' else
                  '1' when mem(debug_tail).q_a_valid = '1' else
@@ -212,12 +214,12 @@ begin
                 if ((looped = true) or (head /= tail)) then
                     if (tail_index = 0) then 
                         if (started = true) then
-                            tail_index := tail_index + 2;
+                            tail_index := tail_index + 1;
                             started := false;
                         else
                             started := true;
                         end if; 
-                    elsif (tail_index = (2 ** ADDR_WIDTH) - 2) then
+                    elsif (tail_index = (2 ** ADDR_WIDTH) - 1) then
                         -- Move to next element
                         if (tail = NUM_FRAMES - 1) then
                             tail := 0;
@@ -229,7 +231,7 @@ begin
                         internal_new <= '1';
                         tail_index := 0;
                     else
-                        tail_index := tail_index + 2;
+                        tail_index := tail_index + 1;
                     end if;
                 end if;
             end if;

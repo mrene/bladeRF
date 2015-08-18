@@ -136,8 +136,8 @@ begin  -- fft_top_beh
       end if;
     else
       valid <= '0';
-      out0 <= '0';
-      out1 <= '0';
+      out0 <= icpx_zero;
+      out1 <= icpx_zero;
     end if;
   end process dr1;
 

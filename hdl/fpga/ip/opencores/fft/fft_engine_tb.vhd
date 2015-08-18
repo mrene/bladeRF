@@ -155,10 +155,10 @@ begin  -- beh1
         write(output_line, integer'image(to_integer(sout_a.im)));
         writeline(data_out, output_line);
 
-        write(output_line, integer'image(to_integer(sout_b.re)));
-        write(output_line, sep);
-        write(output_line, integer'image(to_integer(sout_b.im)));
-        writeline(data_out, output_line);
+        --write(output_line, integer'image(to_integer(sout_b.re)));
+        --write(output_line, sep);
+        --write(output_line, integer'image(to_integer(sout_b.im)));
+        --writeline(data_out, output_line);
       end if;
 
       -- If the full set of data is calculated, write the output buffer
