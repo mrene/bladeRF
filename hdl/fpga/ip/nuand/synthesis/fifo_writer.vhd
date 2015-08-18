@@ -12,19 +12,15 @@ entity fifo_writer is
     meta_en             :   in      std_logic ;
     timestamp           :   in      unsigned(63 downto 0);
 
-    in_i_a              :   in      signed(15 downto 0) ;
-    in_q_a              :   in      signed(15 downto 0) ;
-
-    in_i_b              :   in      signed(15 downto 0) ;
-    in_q_b              :   in      signed(15 downto 0) ;
-
+    in_i                :   in      signed(15 downto 0) ;
+    in_q                :   in      signed(15 downto 0) ;
     in_valid            :   in      std_logic ;
 
     fifo_usedw          :   in      std_logic_vector(11 downto 0) ;
     fifo_clear          :   buffer  std_logic ;
     fifo_write          :   buffer  std_logic ;
     fifo_full           :   in      std_logic ;
-    fifo_data           :   out     std_logic_vector(63 downto 0) ;
+    fifo_data           :   out     std_logic_vector(31 downto 0) ;
 
     meta_fifo_full      :   in     std_logic;
     meta_fifo_usedw     :   in     std_logic_vector(4 downto 0);
@@ -84,7 +80,7 @@ begin
     meta_written_reg <= '0' when reset = '1' else meta_written when rising_edge(clock) ;
 
     -- Simple concatenation of samples
-    fifo_data   <= std_logic_vector(in_q_a & in_i_a & in_q_b & in_i_b) ;
+    fifo_data   <= std_logic_vector(in_q & in_i) ;
     fifo_write  <= in_valid when overflow_recovering = '0' and fifo_full = '0' and (meta_en = '0' or meta_written_reg = '1') else '0' ;
 
     -- Clear out the contents when RX is disabled
