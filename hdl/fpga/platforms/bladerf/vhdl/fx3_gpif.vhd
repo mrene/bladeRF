@@ -174,7 +174,7 @@ begin
                 tx_fifo_enough <= '0' ;
             end if ;
 
-            if( unsigned(rx_fifo_full&rx_fifo_usedw(11 downto 0)) > gpif_buf_size ) then
+            if( unsigned(rx_fifo_full&rx_fifo_usedw) > gpif_buf_size ) then
                 rx_fifo_enough <= '1' ;
             else
                 rx_fifo_enough <= '0' ;
