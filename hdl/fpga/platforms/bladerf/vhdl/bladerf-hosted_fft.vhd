@@ -121,25 +121,7 @@ architecture hosted_bladerf_fft of bladerf is
         rused   :   std_logic_vector(11 downto 0) ;
     end record ;
 
-    type rx_fifo_t is record
-        aclr    :   std_logic ;
-
-        wclock  :   std_logic ;
-        wdata   :   std_logic_vector(63 downto 0) ;
-        wreq    :   std_logic ;
-        wempty  :   std_logic ;
-        wfull   :   std_logic ;
-        wused   :   std_logic_vector(11 downto 0) ;
-
-        rclock  :   std_logic ;
-        rdata   :   std_logic_vector(31 downto 0) ;
-        rreq    :   std_logic ;
-        rempty  :   std_logic ;
-        rfull   :   std_logic ;
-        rused   :   std_logic_vector(12 downto 0) ;
-    end record ;
-
-    signal rx_sample_fifo   : rx_fifo_t ;
+    signal rx_sample_fifo   : fifo_t ;
     signal tx_sample_fifo   : fifo_t ;
 
     type meta_fifo_tx_t is record
@@ -251,8 +233,7 @@ architecture hosted_bladerf_fft of bladerf is
     signal rx_sample_corrected_valid : std_logic;
 
     signal rx_sample_fft_din : icpx_number;
-    signal rx_sample_fft_a : icpx_number;
-    signal rx_sample_fft_b : icpx_number;
+    signal rx_sample_fft : icpx_number;
     signal rx_sample_fft_valid : std_logic;
     signal fft_reset : std_logic;
 
@@ -587,11 +568,8 @@ begin
         meta_fifo_data      =>  rx_meta_fifo.wdata,
         meta_fifo_write     =>  rx_meta_fifo.wreq,
 
-        in_i_a              =>  rx_sample_fft_a.Re,
-        in_q_a              =>  rx_sample_fft_a.Im,
-
-        in_i_b              =>  rx_sample_fft_b.Re,
-        in_q_b              =>  rx_sample_fft_b.Im,
+        in_i              =>  rx_sample_fft.Re,
+        in_q              =>  rx_sample_fft.Im,
 
         in_valid            =>  rx_sample_fft_valid,
 
@@ -983,8 +961,8 @@ begin
         clk => rx_clock,
         din => rx_sample_fft_din,
         din_valid => rx_sample_corrected_valid,
-        sout_a => rx_sample_fft_a,
-        sout_b => rx_sample_fft_b,
+        sout_a => rx_sample_fft,
+        sout_b => open,
         out_sob => open,
         valid => rx_sample_fft_valid
     ) ;

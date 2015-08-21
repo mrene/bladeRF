@@ -57,6 +57,7 @@ architecture beh1 of fft_engine_tb is
       clk       : in  std_logic;
       din       : in  icpx_number;
       valid     : out std_logic;
+      din_valid : in std_logic;
       --saddr     : out unsigned(LOG2_FFT_LEN-2 downto 0);
       --saddr_rev : out unsigned(LOG2_FFT_LEN-2 downto 0);
       sout_a     : out icpx_number;
@@ -105,7 +106,8 @@ begin  -- beh1
 
   -- waveform generation
   WaveGen_Proc : process
-    file data_in         : text open read_mode is "data_in.txt";
+    type bin_t is file of character ;
+    file data_in         : bin_t;
     variable input_line  : line;
     file data_out        : text open write_mode is "data_out.txt";
     variable output_line : line;
@@ -113,6 +115,10 @@ begin  -- beh1
     constant sep         : string := " ";
     variable vout        : T_OUT_DATA;
     variable interval : boolean := false;
+    variable c : character;
+    variable tmp : integer;
+    variable data : std_logic_vector(31 downto 0);
+    variable fs : file_open_status ;
   begin
     -- insert signal assignments here
     wait until Clk = '1';
@@ -120,9 +126,24 @@ begin  -- beh1
     wait until clk = '0';
     wait until clk = '1';
     rst_n <= '1';
+
+    --for i in 0 to 300 loop
+    --wait until clk = '0';
+    --  wait until clk = '1';
+    --  wait until clk = '0';
+
+    --  din_valid <= '0';
+    --  din <= icpx_zero;
+    --end loop;
         
     write(output_line, string'("VHDL GENERATED"));
     writeline(data_out, output_line);
+
+    --character open read_mode is "data_in.txt";
+    file_open(fs, data_in, "data_in.bin", READ_MODE);
+    if( fs /= OPEN_OK ) then
+        report "File open issues" severity failure ;
+     end if ;
 
     l1 : while not end_sim loop
       if not endfile(data_in) then
@@ -132,11 +153,25 @@ begin  -- beh1
           interval := false;
         else
           interval := true;
-          readline(data_in, input_line);
-          read(input_line, tre);
-          read(input_line, tim);
+          --readline(data_in, input_line);
+          read(data_in, c);
+          tmp := integer(natural(character'pos(c)));
+          data(23 downto 16) := std_logic_vector(to_unsigned(tmp,8));
+          read(data_in, c);
+          tmp := integer(natural(character'pos(c)));
+          data(31 downto 24) := std_logic_vector(to_unsigned(tmp,8));
+          
+          read(data_in, c);
+          tmp := integer(natural(character'pos(c)));
+          data(7 downto 0) := std_logic_vector(to_unsigned(tmp,8));
+          read(data_in, c);
+          tmp := integer(natural(character'pos(c)));
+          data(15 downto 8) := std_logic_vector(to_unsigned(tmp,8));
+
+
           din_valid <= '1';
-          din <= cplx2icpx(complex'(tre, tim));
+          --din <= cplx2icpx(complex'(tre, tim));
+          din <= stlv2icpx(data);
         end if;
       else
         din_valid <= '0';

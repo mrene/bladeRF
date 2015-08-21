@@ -202,6 +202,8 @@ begin  -- fft_top_beh
       r_din1 <= icpx_zero;
       r_din_valid <= '0';
       start0 <= '0';
+      start0_pre <= '0';
+      start0_del <= 0;
     elsif clk'event and clk = '1' then  -- rising clock edge
       if start0_pre = '1' then
         r_din_valid <= din_valid;
