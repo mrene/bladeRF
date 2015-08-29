@@ -1,0 +1,11 @@
+CC=clang
+CXX=clang++
+
+CXXFLAGS=-Wall -ggdb -std=c++14
+LDFLAGS=-lbladeRF
+
+test: test.o
+	$(CXX) $< -o $@ $(LDFLAGS)
+
+%.o: %.cpp
+	$(CXX) $(CXXFLAGS) -c -o $@ $<

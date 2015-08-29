@@ -1,0 +1,283 @@
+#include <stdio.h>
+#include <pthread.h>
+#include "libbladeRF.h"
+
+#include <thread>
+#include <iostream>
+#include <sstream>
+#include <fstream>
+#include <iomanip>
+#include <vector>
+
+
+#include <cstdio>
+#include <assert.h>
+
+using std::cerr;
+using std::cout;
+
+typedef enum bladerf_fpga_mux {
+    BLADERF_RX_MUX_NORMAL = 0,
+    BLADERF_RX_MUX_12BIT_COUNTER,
+    BLADERF_RX_MUX_32BIT_COUNTER,
+    BLADERF_RX_MUX_ENTROPY,
+    BLADERF_RX_MUX_DIGITAL_LOOPBACK
+} bladerf_fpga_mux_t;
+
+static int bladerf_set_fpga_rx_mux(struct bladerf *dev, bladerf_fpga_mux_t mux) {
+    uint32_t config_gpio;
+    int status;
+
+    if ((status = bladerf_config_gpio_read(dev, &config_gpio))) {
+        return status;
+    }
+
+    // rx_mux_sel is a 3-bit value starting at bit 8
+    // clear value
+    config_gpio &= ~((1 << 8) | (1 << 9) | (1 << 10));
+    // set value
+    config_gpio |= mux << 8;
+
+    return bladerf_config_gpio_write(dev, config_gpio);
+}
+
+#if 0
+static void hexdump(const void *inbuf, size_t len) {
+    unsigned long address = 0;
+    char c;
+    size_t pos = 0;
+
+    cout << std::hex << std::setfill('0');
+    while( pos < len )
+    {
+        int nread;
+        const char *buf = (const char*)inbuf + pos;
+
+        nread = std::min((size_t)16, len - pos);
+        
+        // for( nread = 0; nread < 16 && cin.get(buf[nread]); nread++ );
+        if( nread == 0 ) break;
+        
+        // Show the hex codes
+        for( int i = 0; i < 16; i++ )
+        {
+            if( i % 8 == 0 ) cout << ' ';
+            if( i < nread )
+                cout << ' ' << std::setw(2) << (unsigned)buf[i];
+            else 
+                cout << "   ";
+        }
+#if 0
+        cout << "  ";
+        for( int i = 0; i < nread; i++)
+        {
+            if( buf[i] < 32 ) cout << '.';
+            else cout << buf[i];
+        }
+#endif
+        cout << "\n";
+        pos += nread;
+    }
+}
+#endif
+
+static void counter_dump(uint32_t *data, size_t samples) {
+  cout << std::hex << std::setfill('0');
+  for (size_t i = 0; i < samples; i++) {
+    if (i && i % 8 == 0) {
+      cout << "\n";
+    }
+    cout << std::setw(4) << std::hex << std::setfill('0') << data[i] << " ";
+  }
+}
+
+
+static void data_dump(uint16_t *data, size_t samples) {
+  cout << std::setw(4) << std::hex << std::setfill('0');
+  for (size_t i = 0; i < samples; i += 2) {
+    cout << std::dec << (int16_t)data[i] << " " << (int16_t)data[i+1] << "\n";
+  }
+}
+
+
+static int error_check(int status) {
+    if (status) {
+        throw std::runtime_error(bladerf_strerror(status));
+    }
+
+    return status;
+}
+
+struct buffer_holder {
+  void **buffers;
+  size_t nBuffers;
+  size_t index;
+
+  buffer_holder() : buffers(0), nBuffers(0), index(0) {
+
+  }
+
+  size_t next_index() {
+    return ++index % nBuffers;
+  }
+
+  void *next() {
+    return buffers[next_index()];
+  }
+};
+
+static buffer_holder tx_buffers, rx_buffers;
+
+static std::vector<int16_t> samples;
+static std::vector<int16_t>::iterator samples_it, samples_end;
+
+static void *rx_callback(struct bladerf *dev,
+                         struct bladerf_stream *stream,
+                         struct bladerf_metadata *meta,
+                         void *samples,
+                         size_t num_samples,
+                         void *user_data) {
+
+  data_dump((uint16_t*)samples, num_samples);
+
+  return rx_buffers.next();
+}
+
+static void *tx_callback(struct bladerf *dev,
+                         struct bladerf_stream *stream,
+                         struct bladerf_metadata *meta,
+                         void *samples,
+                         size_t num_samples,
+                         void *user_data) {
+
+  if (samples_it == samples_end) {
+    std::cerr << "TX Complete\n";
+    return BLADERF_STREAM_SHUTDOWN;
+  }
+
+  uint16_t *newbuf = (uint16_t*)tx_buffers.next();
+
+  for (size_t i = 0; i < num_samples && samples_it != samples_end; i++, ++samples_it) {
+    // newbuf[i] = 0x00A00000 + i;
+    if (samples_it != samples_end)
+      newbuf[i] = *samples_it;
+    else 
+      newbuf[i] = 0;
+  }
+
+  return newbuf;
+}
+
+int main(int argc, char *argv[]) {
+    struct bladerf *dev;
+    int status;
+
+    std::ifstream in_samples("./data_in.txt");
+    std::ofstream in_samples_int("./data_in_int.txt");
+    FILE *in_bin = fopen("./data_in.bin", "wb");
+
+
+    while (!in_samples.eof()) {
+      std::string line;
+      std::getline(in_samples, line);
+
+      std::stringstream ss(line);
+      float i, q;
+      ss >> i;
+      ss >> q;
+
+      // cout << "I: " << i << " Q:" <<  q << "\n";
+
+      int16_t ii = i * (0xFFF >> 2), iq = q * (0xFFF >> 2);
+      samples.push_back(ii);
+      samples.push_back(iq);
+
+      in_samples_int << std::setw(4) << std::hex << std::setfill('0') << ii;
+      in_samples_int << " ";
+      in_samples_int << std::setw(4) << std::hex << std::setfill('0') << iq << std::endl;
+
+      fwrite((void*)&ii, sizeof(ii), 1, in_bin);
+      fwrite((void*)&iq, sizeof(iq), 1, in_bin);
+
+      assert(sizeof(ii) == 2);
+      assert(sizeof(iq) == 2);
+    }
+
+    in_samples_int.close();
+
+    std::cerr << "Read " << samples.size()/2 << " complex samples" << std::endl;
+
+    samples_it = samples.begin();
+    samples_end = samples.end();
+
+    /* Skip the 6 first samples */
+    for (size_t i = 0; i < 5*2; i++)
+       ++samples_it;
+
+    try {
+        bladerf_log_set_verbosity(BLADERF_LOG_LEVEL_DEBUG);
+
+        status = bladerf_open(&dev, "*");
+        error_check(status);
+
+        struct bladerf_stream *rx_stream, *tx_stream;
+
+        rx_buffers.nBuffers = 16;
+        status = bladerf_init_stream(&rx_stream, dev, rx_callback, &rx_buffers.buffers, 16, BLADERF_FORMAT_SC16_Q11, 1024, 4, NULL);
+        error_check(status);
+
+        tx_buffers.nBuffers = 16;
+        status = bladerf_init_stream(&tx_stream, dev, tx_callback, &tx_buffers.buffers, 16, BLADERF_FORMAT_SC16_Q11, 1024, 4, NULL);
+        error_check(status);
+
+        // Turn on FPGA loopback
+        status = bladerf_set_fpga_rx_mux(dev, BLADERF_RX_MUX_DIGITAL_LOOPBACK);
+        error_check(status);
+
+        // Turn off FX3 and RF loopback
+        status = bladerf_set_loopback(dev, BLADERF_LB_NONE);
+        error_check(status);
+
+        bladerf_set_sample_rate(dev, BLADERF_MODULE_RX, 100000, NULL);
+        bladerf_set_sample_rate(dev, BLADERF_MODULE_TX, 100000, NULL);
+
+        // Enable RX & TX
+        status = bladerf_enable_module(dev, BLADERF_MODULE_RX, true);
+        error_check(status);
+
+        status = bladerf_enable_module(dev, BLADERF_MODULE_TX, true);
+        error_check(status);
+
+        unsigned int timeout;
+        bladerf_get_stream_timeout(dev, BLADERF_MODULE_RX, &timeout);
+        std::cerr << "RX Timeout: " << timeout << std::endl;
+
+        std::thread tx_thread([&]() {
+            bladerf_stream(tx_stream, BLADERF_MODULE_TX);
+        });
+
+        std::thread rx_thread([&]() {
+            bladerf_stream(rx_stream, BLADERF_MODULE_RX);
+        });
+
+        rx_thread.join();
+        tx_thread.join();
+
+
+        bladerf_deinit_stream(rx_stream);
+        bladerf_deinit_stream(tx_stream);
+
+        // Turn off FPGA loopback
+        status = bladerf_set_fpga_rx_mux(dev, BLADERF_RX_MUX_NORMAL);
+        error_check(status);
+    }
+    catch (std::runtime_error &e) {
+        cerr << "error: " << e.what() << "\n";
+    }
+
+    return 0;
+}
+
+
+
+
