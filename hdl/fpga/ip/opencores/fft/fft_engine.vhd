@@ -300,6 +300,7 @@ begin  -- fft_top_beh
         start_delay_local(st) <= 0;
         start_delay_next(st) <= 0;
         start_dr(st)    <= '0';
+        started(st+1)   <= '0';
       elsif clk'event and clk = '1' then  -- rising clock edge
         if started(st) = '1' then
 
