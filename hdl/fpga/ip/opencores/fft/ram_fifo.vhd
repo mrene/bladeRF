@@ -164,6 +164,10 @@ begin
     begin
         if rst_n = '0' then
             out_sob <= '0';
+            debug_tail_index_delayed <= 0;
+            debug_tail_delayed <= 0;
+            debug_tail_delayed2 <= 0;
+            internal_new_delayed <= '0';
         elsif rising_edge(clk) then
             debug_tail_index_delayed <= debug_tail_index;
 
@@ -195,6 +199,9 @@ begin
 
             debug_head <= 0;
             debug_tail <= 0;
+            debug_tail_index <= 0;
+            tail_index := 0;
+            started := false;
         elsif (rising_edge(clk)) then
             internal_new <= '0';
 
