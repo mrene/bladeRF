@@ -104,10 +104,10 @@ begin  -- beh1
       valid    <= valid_del2;
     end if;
   end process p1;
-  dout1.re <= resize(sout1r(2*ICPX_WIDTH-1 downto ICPX_WIDTH), ICPX_WIDTH);
-  dout1.im <= resize(sout1i(2*ICPX_WIDTH-1 downto ICPX_WIDTH), ICPX_WIDTH);
-  dout0.re <= resize(vdr0_d2(ICPX_WIDTH downto 0), ICPX_WIDTH);
-  dout0.im <= resize(vdi0_d2(ICPX_WIDTH downto 0), ICPX_WIDTH);
+  dout1.re <= resize(sout1r(2*ICPX_WIDTH-1 downto ICPX_WIDTH-1), ICPX_WIDTH);
+  dout1.im <= resize(sout1i(2*ICPX_WIDTH-1 downto ICPX_WIDTH-1), ICPX_WIDTH);
+  dout0.im <= resize(vdi0_d2(ICPX_WIDTH downto 1), ICPX_WIDTH);
+  dout0.re <= resize(vdr0_d2(ICPX_WIDTH downto 1), ICPX_WIDTH);
 
   -- Result may have one bit more, we add 1 for better rounding
 

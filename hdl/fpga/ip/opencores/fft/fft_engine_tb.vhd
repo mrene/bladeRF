@@ -114,10 +114,11 @@ begin  -- beh1
     variable tre, tim    : real;
     constant sep         : string := " ";
     variable vout        : T_OUT_DATA;
-    variable interval : boolean := false;
+    variable interval : integer := 0;
     variable c : character;
     variable tmp : integer;
-    variable data : std_logic_vector(31 downto 0);
+    variable data : std_logic_vector(43 downto 0);
+
     variable fs : file_open_status ;
   begin
     -- insert signal assignments here
@@ -145,21 +146,70 @@ begin  -- beh1
         report "File open issues" severity failure ;
      end if ;
 
+
+    -- Simulate what actually happens on the bladerf during fpga loopback
+    -- There are 6 zero-samples sent, followed by a long period of no data, followed by the actual data
+
+    -- Start by some well-deserved silence
+    for i in 0 to 32 loop
+      din_valid <= '0';
+      din <= icpx_zero;
+
+      wait until clk = '0';
+      wait until clk = '1';
+    end loop;
+
+    -- The 6 zero samples in the tx buffer used for loopback
+    for i in 0 to 5 loop
+      din_valid <= '1';
+      din <= icpx_zero;
+
+      wait until clk = '0';
+      wait until clk = '1';
+
+
+      din_valid <= '0';
+      din <= icpx_zero;
+      wait until clk = '0';
+      wait until clk = '1'; 
+    end loop;
+
+    -- Some more well-deserved silence
+    for i in 0 to 64 loop
+      din_valid <= '0';
+      din <= icpx_zero;
+
+      wait until clk = '0';
+      wait until clk = '1';
+    end loop;
+
     l1 : while not end_sim loop
       if not endfile(data_in) then
-        if interval = true then
+        if interval mod 2 = 0 then
           din_valid <= '0';
           din <= icpx_zero;
-          interval := false;
+          if interval = 6 then
+            interval := interval + 1;
+            for waiter in 0 to 16 loop
+              wait until clk = '0';
+              wait until clk = '1';
+            end loop;
+          else
+            interval := interval + 1;
+          end if;
         else
-          interval := true;
+          interval := interval + 1;
+
           --readline(data_in, input_line);
           read(data_in, c);
           tmp := integer(natural(character'pos(c)));
-          data(23 downto 16) := std_logic_vector(to_unsigned(tmp,8));
+          data(29 downto 22) := std_logic_vector(to_unsigned(tmp,8));
           read(data_in, c);
           tmp := integer(natural(character'pos(c)));
-          data(31 downto 24) := std_logic_vector(to_unsigned(tmp,8));
+          data(37 downto 30) := std_logic_vector(to_unsigned(tmp,8));
+
+          -- Sign extend
+          data(43 downto 38) := (others => data(37));
           
           read(data_in, c);
           tmp := integer(natural(character'pos(c)));
@@ -168,10 +218,15 @@ begin  -- beh1
           tmp := integer(natural(character'pos(c)));
           data(15 downto 8) := std_logic_vector(to_unsigned(tmp,8));
 
+          -- Sign-extend
+          data(21 downto 16) := (others => data(15));
+
 
           din_valid <= '1';
           --din <= cplx2icpx(complex'(tre, tim));
-          din <= stlv2icpx(data);
+           din <= stlv2icpx(data);
+          --din.Re <= resize(signed(data(37 downto 22)), ICPX_WIDTH);
+          --din.Im <= resize(signed(data(15 downto 0)), ICPX_WIDTH);
         end if;
       else
         din_valid <= '0';

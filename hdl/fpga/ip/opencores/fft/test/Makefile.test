@@ -2,7 +2,7 @@ CC=clang
 CXX=clang++
 
 CXXFLAGS=-Wall -ggdb -std=c++14
-LDFLAGS=-lbladeRF
+LDFLAGS=-lbladeRF -lpthread
 
 test: test.o
 	$(CXX) $< -o $@ $(LDFLAGS)

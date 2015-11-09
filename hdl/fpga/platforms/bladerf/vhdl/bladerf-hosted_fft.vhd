@@ -568,8 +568,8 @@ begin
         meta_fifo_data      =>  rx_meta_fifo.wdata,
         meta_fifo_write     =>  rx_meta_fifo.wreq,
 
-        in_i              =>  rx_sample_fft.Re,
-        in_q              =>  rx_sample_fft.Im,
+        in_i              =>  resize(rx_sample_fft.Re(ICPX_WIDTH-1 downto ICPX_WIDTH-16), 16),
+        in_q              =>  resize(rx_sample_fft.Im(ICPX_WIDTH-1 downto ICPX_WIDTH-16), 16),
 
         in_valid            =>  rx_sample_fft_valid,
 
@@ -969,8 +969,8 @@ begin
 
     fft_reset <= '0' when (rx_reset = '1' or rx_enable = '0') else '1';
 
-    rx_sample_fft_din.Re <= rx_sample_corrected_i when rx_sample_corrected_valid else (others => '0');
-    rx_sample_fft_din.Im <= rx_sample_corrected_q when rx_sample_corrected_valid else (others => '0');
+    rx_sample_fft_din.Re <= resize(rx_sample_corrected_i, ICPX_WIDTH) when rx_sample_corrected_valid else (others => '0');
+    rx_sample_fft_din.Im <= resize(rx_sample_corrected_q, ICPX_WIDTH)  when rx_sample_corrected_valid else (others => '0');
     
 end architecture ; -- arch
 

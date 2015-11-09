@@ -70,6 +70,7 @@ if { $opts(stp) != "" } {
     }
 } else {
     set_global_assignment -name ENABLE_SIGNALTAP off
+    set_user_option -name TALKBACK_ENABLED on
 }
 
 set_global_assignment -name DEVICE EP4CE$opts(size)F23C8
