@@ -3,16 +3,64 @@
 import argparse
 import re
 from pprint import pprint
+import numpy
 import sys
 
 NUM_STAGES=10
+
+def parse_modelsim_file(filename):
+	"""
+	Opens a modelsim transcript and load all values
+	"""
+
+	stages = [ ]
+
+
+	for i in range(0,NUM_STAGES):
+		stages += [ {
+			"IN": [ [], [] ],
+			"OUT": [ [], [] ]
+		}]
+
+	# Line format:
+	# ** Note: STAGE8-OUT1 -2 -21
+	#    Time: 100 us  Iteration: 0  Instance: /fft_engine_tb/fft_engine_1/g1(8)/i3/fft_switch_1
+	expr = re.compile(r"STAGE(\d)-(IN|OUT)(\d) (-?\d+) (-?\d+)")
+	time_expr = re.compile(r"Time: ((\d+) ((.?)s))")
+
+	with open(filename, "r") as fp:
+		found_note = False
+		values = (0, 0)
+		stage = 0
+		direction = "IN"
+		index = 0
+
+		for line in fp:
+			if not found_note:
+				matches = expr.findall(line)
+				if len(matches) > 0:
+					m = matches[0]
+					values = (int(m[3]), int(m[4]))
+					stage = int(m[0])
+					direction = m[1]
+					index = int(m[2])
+					found_note = True
+			else:
+				time_matches = time_expr.findall(line)
+				stages[stage][direction][index] += [ ( values, time_matches[0][0] ) ]
+
+				# print "Found:  Stage: %s Direction: %s Index: %s Time: %s -- %s" % (stage, direction, index, time_matches[0][0], values)
+
+				found_note = False
+	return stages
+
 
 def parse_file(filename):
 	"""
 	Opens a report trace and load all values
 	"""
 
-	stages = [ ];
+	stages = [ ]
 
 	for i in range(0,NUM_STAGES):
 		stages += [ {
@@ -67,10 +115,10 @@ def main():
 	parser.add_argument('--ref', metavar='r', type=str, nargs=1, help='Reference implementation')
 	parser.add_argument('--target', metavar='t', type=str, nargs=1, help='Implementation under test')
 	parser.add_argument('-k', metavar='k', dest='keep', type=bool, help='Keep going')
-	args = parser.parse_args()
+	args = parser.parse_args()	
 
 	ref_data = parse_file(args.ref[0])
-	target_data = parse_file(args.target[0])
+	target_data = parse_modelsim_file(args.target[0])
 	n = args.size[0]
 
 	for stage in range(0, NUM_STAGES):
@@ -89,7 +137,7 @@ def main():
 				# pprint(ref[nzi_ref:(nzi_ref + n)])
 				# pprint(target[nzi_target:(nzi_target + n)])
 
-				if values(ref_slice) == values(target_slice):
+				if numpy.allclose(values(ref_slice), values(target_slice), atol=4):
 					print "Stage %d %s%d PASS (%d samples)" % (stage, direction, index, len(target_slice))
 				else:
 					print "Stage %d %s%d FAIL (%d samples)" % (stage, direction, index, len(target_slice))

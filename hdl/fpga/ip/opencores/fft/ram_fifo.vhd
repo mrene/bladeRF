@@ -152,7 +152,8 @@ begin
 
     out_data_b <= icpx_zero;
 
-    out_valid <= '1' when mem(debug_tail_delayed).q_a_valid = '1' else
+    out_valid <= '0' when internal_new_delayed else
+                 '1' when mem(debug_tail_delayed).q_a_valid = '1' else
                  '1' when mem(debug_tail).q_a_valid = '1' else
                  '0';
 

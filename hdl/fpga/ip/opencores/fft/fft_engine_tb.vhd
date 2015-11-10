@@ -161,7 +161,7 @@ begin  -- beh1
 
     -- The 6 zero samples in the tx buffer used for loopback
     for i in 0 to 5 loop
-      din_valid <= '1';
+      --din_valid <= '1';
       din <= icpx_zero;
 
       wait until clk = '0';

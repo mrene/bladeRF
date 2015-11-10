@@ -65,6 +65,8 @@ architecture fft_s_beh of fft_data_switch is
   signal phase          : integer range 0 to 1;
   signal cycle          : integer range 0 to CYCLE_LIMIT;
 
+  signal s_out0, s_out1 : icpx_number;
+
 
   component dp_ram_rbw_icpx
     generic (
@@ -121,23 +123,26 @@ begin  -- fft_top_beh
   dpr_ra <= in_valid when enable = '1' else '0';
   dpr_rb <= in_valid when enable = '1' else '0';
 
+  out0 <= s_out0;
+  out1 <= s_out1;
+
   -- Output values router.
   dr1 : process (dpr_qa, dpr_qb, in0_del, phase_del, dpr_qa_valid, in_valid_del) is
   begin  -- process dr1
     if in_valid_del = '1' then
       if phase_del = 0 then
-        out0 <= dpr_qb;
-        out1 <= dpr_qa;
+        s_out0 <= dpr_qb;
+        s_out1 <= dpr_qa;
         valid <= dpr_qa_valid;
       else
-        out1 <= in0_del;
-        out0 <= dpr_qa;
+        s_out1 <= in0_del;
+        s_out0 <= dpr_qa;
         valid <= dpr_qa_valid;
       end if;
     else
       valid <= '0';
-      out0 <= icpx_zero;
-      out1 <= icpx_zero;
+      s_out0 <= icpx_zero;
+      s_out1 <= icpx_zero;
     end if;
   end process dr1;
 
@@ -227,8 +232,8 @@ begin  -- fft_top_beh
   --    end if;
 
   --    if dpr_qa_valid = '1' then
-  --      report "STAGE" & integer'image(STAGE) & "-OUT0 " & integer'image(to_integer(out0.re)) & " " & integer'image(to_integer(out0.im));
-  --      report "STAGE" & integer'image(STAGE) & "-OUT1 " & integer'image(to_integer(out1.re)) & " " & integer'image(to_integer(out1.im));
+  --      report "STAGE" & integer'image(STAGE) & "-OUT0 " & integer'image(to_integer(s_out0.re)) & " " & integer'image(to_integer(s_out0.im));
+  --      report "STAGE" & integer'image(STAGE) & "-OUT1 " & integer'image(to_integer(s_out1.re)) & " " & integer'image(to_integer(s_out1.im));
   --    end if;
 
   --  end if;
