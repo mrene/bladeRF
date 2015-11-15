@@ -1,0 +1,11 @@
+set frequency 540000000
+set samplerate 10000000
+set bandwidth 10000000
+set lnagain 0
+set rxvga1 20
+set rxvga2 10
+
+rx config file=./data-rx.bin format=bin n=10240000
+rx start
+
+rx wait

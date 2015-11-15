@@ -202,16 +202,19 @@ int main(int argc, char *argv[]) {
         error_check(status);
 
         // Turn on FPGA loopback
-        status = bladerf_set_fpga_rx_mux(dev, BLADERF_RX_MUX_DIGITAL_LOOPBACK);
+        // status = bladerf_set_fpga_rx_mux(dev, BLADERF_RX_MUX_DIGITAL_LOOPBACK);
         // status = bladerf_set_fpga_rx_mux(dev, BLADERF_RX_MUX_12BIT_COUNTER);
+        // error_check(status);
+
+        // Turn on RF loopback
+        status = bladerf_set_loopback(dev, BLADERF_LB_BB_TXVGA1_RXVGA2);
         error_check(status);
 
-        // Turn off FX3 and RF loopback
-        status = bladerf_set_loopback(dev, BLADERF_LB_NONE);
-        error_check(status);
+        bladerf_set_sample_rate(dev, BLADERF_MODULE_RX, 2000000, NULL);
+        bladerf_set_sample_rate(dev, BLADERF_MODULE_TX, 2000000, NULL);
 
-        bladerf_set_sample_rate(dev, BLADERF_MODULE_RX, 1000000, NULL);
-        bladerf_set_sample_rate(dev, BLADERF_MODULE_TX, 1000000, NULL);
+        bladerf_set_frequency(dev, BLADERF_MODULE_RX, 916000000);
+        bladerf_set_frequency(dev, BLADERF_MODULE_TX, 915000000);
 
         // Enable RX & TX
         status = bladerf_enable_module(dev, BLADERF_MODULE_RX, true);
@@ -244,6 +247,9 @@ int main(int argc, char *argv[]) {
 
         // Turn off FPGA loopback
         status = bladerf_set_fpga_rx_mux(dev, BLADERF_RX_MUX_NORMAL);
+        error_check(status);
+
+        status = bladerf_set_loopback(dev, BLADERF_LB_NONE);
         error_check(status);
     }
     catch (std::runtime_error &e) {
