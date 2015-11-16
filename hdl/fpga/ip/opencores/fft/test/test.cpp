@@ -13,6 +13,8 @@
 #include <cstdio>
 #include <assert.h>
 
+#include <string.h>
+
 using std::cerr;
 using std::cout;
 
@@ -20,7 +22,7 @@ typedef enum bladerf_fpga_mux {
     BLADERF_RX_MUX_NORMAL = 0,
     BLADERF_RX_MUX_12BIT_COUNTER,
     BLADERF_RX_MUX_32BIT_COUNTER,
-    BLADERF_RX_MUX_ENTROPY,
+    BLADERF_RX_MUX_FFT,
     BLADERF_RX_MUX_DIGITAL_LOOPBACK
 } bladerf_fpga_mux_t;
 
@@ -41,7 +43,7 @@ static int bladerf_set_fpga_rx_mux(struct bladerf *dev, bladerf_fpga_mux_t mux) 
     return bladerf_config_gpio_write(dev, config_gpio);
 }
 
-static void data_dump(uint16_t *data, size_t samples) {
+static void data_dump(uint32_t *data, size_t samples) {
   cout << "Buffer start\n";
   // cout << std::setw(4) << std::hex << std::setfill('0');
   for (size_t i = 0; i < samples; i += 2) {
@@ -51,7 +53,6 @@ static void data_dump(uint16_t *data, size_t samples) {
   }
   cout << "Buffer end\n";
 }
-
 
 static int error_check(int status) {
     if (status) {
@@ -84,8 +85,10 @@ static buffer_holder tx_buffers, rx_buffers;
 static std::vector<int16_t> samples;
 static std::vector<int16_t>::iterator samples_it, samples_end;
 
-static std::vector<int16_t> rx_samples;
+static std::vector<int32_t> rx_samples;
 static int rx_stop_after = 102400;
+
+typedef int32_t rx_sample_t;
 
 static void *rx_callback(struct bladerf *dev,
                          struct bladerf_stream *stream,
@@ -94,7 +97,7 @@ static void *rx_callback(struct bladerf *dev,
                          size_t num_samples,
                          void *user_data) {
 
-  int16_t *isamples = (int16_t*)samples;
+  rx_sample_t *isamples = (rx_sample_t*)samples;
 
   std::copy(isamples, isamples + num_samples, std::back_inserter(rx_samples));
   //data_dump((uint16_t*)samples, num_samples);
@@ -102,7 +105,7 @@ static void *rx_callback(struct bladerf *dev,
   rx_stop_after -= num_samples;
 
   if (rx_stop_after <= 0) {
-    data_dump((uint16_t*)&rx_samples[0], rx_samples.size());
+    data_dump((uint32_t*)&rx_samples[0], rx_samples.size());
     rx_samples.clear();
     return BLADERF_STREAM_SHUTDOWN;
   }
@@ -201,10 +204,34 @@ int main(int argc, char *argv[]) {
         status = bladerf_init_stream(&tx_stream, dev, tx_callback, &tx_buffers.buffers, 16, BLADERF_FORMAT_SC16_Q11, 10240, 8, NULL);
         error_check(status);
 
+        if (argc > 1 && *argv[1]) {
+          std::string mode = argv[1];
+
+          bladerf_fpga_mux_t mux_mode = BLADERF_RX_MUX_NORMAL;
+
+          if (mode == "fft") {
+            mux_mode = BLADERF_RX_MUX_FFT;
+          } else if (mode == "normal") {
+            mux_mode = BLADERF_RX_MUX_NORMAL;
+          } else if(mode == "counter") {
+            mux_mode = BLADERF_RX_MUX_12BIT_COUNTER;
+          } else if(mode == "counter32") {
+            mux_mode = BLADERF_RX_MUX_32BIT_COUNTER;
+          } else {
+            mode = "normal";
+          }
+
+          status = bladerf_set_fpga_rx_mux(dev, mux_mode);
+          error_check(status);
+
+          cout << "Exiting after setting rx mux mode to " << mode << "\n";
+          return 0;  
+        }
+
         // Turn on FPGA loopback
         // status = bladerf_set_fpga_rx_mux(dev, BLADERF_RX_MUX_DIGITAL_LOOPBACK);
-        // status = bladerf_set_fpga_rx_mux(dev, BLADERF_RX_MUX_12BIT_COUNTER);
-        // error_check(status);
+        status = bladerf_set_fpga_rx_mux(dev, BLADERF_RX_MUX_12BIT_COUNTER);
+        error_check(status);
 
         // Turn on RF loopback
         status = bladerf_set_loopback(dev, BLADERF_LB_BB_TXVGA1_RXVGA2);
@@ -239,7 +266,7 @@ int main(int argc, char *argv[]) {
         tx_thread.join();
 
         if (rx_samples.size()) {
-          data_dump((uint16_t*)&rx_samples[0], rx_samples.size());
+          data_dump((uint32_t*)&rx_samples[0], rx_samples.size());
         }
 
         bladerf_deinit_stream(rx_stream);

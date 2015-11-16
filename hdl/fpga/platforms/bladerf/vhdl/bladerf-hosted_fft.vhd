@@ -78,7 +78,7 @@ architecture hosted_bladerf_fft of bladerf is
     alias tx_clock  is c4_tx_clock ;
     alias rx_clock  is lms_rx_clock_out ;
 
-    type rx_mux_mode_t is (RX_MUX_NORMAL, RX_MUX_12BIT_COUNTER, RX_MUX_32BIT_COUNTER, RX_MUX_ENTROPY, RX_MUX_DIGITAL_LOOPBACK) ;
+    type rx_mux_mode_t is (RX_MUX_NORMAL, RX_MUX_12BIT_COUNTER, RX_MUX_32BIT_COUNTER, RX_MUX_MODE_FFT, RX_MUX_DIGITAL_LOOPBACK) ;
 
     signal rx_mux_sel       : unsigned(2 downto 0) ;
     signal rx_mux_mode      : rx_mux_mode_t ;
@@ -121,7 +121,26 @@ architecture hosted_bladerf_fft of bladerf is
         rused   :   std_logic_vector(11 downto 0) ;
     end record ;
 
-    signal rx_sample_fifo   : fifo_t ;
+
+    type rx_fifo_t is record
+        aclr    :   std_logic ;
+
+        wclock  :   std_logic ;
+        wdata   :   std_logic_vector(63 downto 0) ;
+        wreq    :   std_logic ;
+        wempty  :   std_logic ;
+        wfull   :   std_logic ;
+        wused   :   std_logic_vector(11 downto 0) ;
+
+        rclock  :   std_logic ;
+        rdata   :   std_logic_vector(31 downto 0) ;
+        rreq    :   std_logic ;
+        rempty  :   std_logic ;
+        rfull   :   std_logic ;
+        rused   :   std_logic_vector(12 downto 0) ;
+    end record ;
+
+    signal rx_sample_fifo   : rx_fifo_t ;
     signal tx_sample_fifo   : fifo_t ;
 
     type meta_fifo_tx_t is record
@@ -224,12 +243,12 @@ architecture hosted_bladerf_fft of bladerf is
     signal lms_rx_data_reg      :   signed(11 downto 0) ;
     signal lms_rx_iq_select_reg :   std_logic ;
 
-    signal rx_mux_i             :   signed(15 downto 0) ;
-    signal rx_mux_q             :   signed(15 downto 0) ;
+    signal rx_mux_i             :   signed(31 downto 0) ;
+    signal rx_mux_q             :   signed(31 downto 0) ;
     signal rx_mux_valid         :   std_logic ;
 
-    signal rx_sample_corrected_i : signed(15 downto 0);
-    signal rx_sample_corrected_q : signed(15 downto 0);
+    signal rx_sample_corrected_i : signed(31 downto 0);
+    signal rx_sample_corrected_q : signed(31 downto 0);
     signal rx_sample_corrected_valid : std_logic;
 
     signal rx_sample_fft_din : icpx_number;
@@ -568,37 +587,37 @@ begin
         meta_fifo_data      =>  rx_meta_fifo.wdata,
         meta_fifo_write     =>  rx_meta_fifo.wreq,
 
-        in_i              =>  resize(rx_sample_fft.Re(ICPX_WIDTH downto ICPX_WIDTH-16), 16),
-        in_q              =>  resize(rx_sample_fft.Im(ICPX_WIDTH downto ICPX_WIDTH-16), 16),
+        in_i              =>  rx_mux_i,
+        in_q              =>  rx_mux_q,
 
-        in_valid            =>  rx_sample_fft_valid,
+        in_valid            =>  rx_mux_valid,
 
         overflow_led        =>  rx_overflow_led,
         overflow_count      =>  rx_overflow_count,
         overflow_duration   =>  x"ffff"
       ) ;
 
-    U_rx_iq_correction : entity work.iq_correction(rx)
-      generic map(
-        INPUT_WIDTH         => rx_sample_corrected_i'length
-      ) port map(
-        reset               => rx_reset,
-        clock               => rx_clock,
+    --U_rx_iq_correction : entity work.iq_correction(rx)
+    --  generic map(
+    --    INPUT_WIDTH         => rx_sample_corrected_i'length
+    --  ) port map(
+    --    reset               => rx_reset,
+    --    clock               => rx_clock,
 
-        in_real             => resize(rx_mux_i,16),
-        in_imag             => resize(rx_mux_q,16),
-        in_valid            => rx_mux_valid,
+    --    in_real             => rx_mux_i,
+    --    in_imag             => rx_mux_q,
+    --    in_valid            => rx_mux_valid,
 
-        out_real            => rx_sample_corrected_i,
-        out_imag            => rx_sample_corrected_q,
-        out_valid           => rx_sample_corrected_valid,
+    --    out_real            => rx_sample_corrected_i,
+    --    out_imag            => rx_sample_corrected_q,
+    --    out_valid           => rx_sample_corrected_valid,
 
-        dc_real             => FPGA_DC_CORRECTION,
-        dc_imag             => FPGA_DC_CORRECTION,
-        gain                => correction_rx_gain,
-        phase               => correction_rx_phase,
-        correction_valid    => correction_valid
-      );
+    --    dc_real             => FPGA_DC_CORRECTION,
+    --    dc_imag             => FPGA_DC_CORRECTION,
+    --    gain                => correction_rx_gain,
+    --    phase               => correction_rx_phase,
+    --    correction_valid    => correction_valid
+    --  );
 
     U_fifo_reader : entity work.fifo_reader
       port map (
@@ -706,26 +725,30 @@ begin
         elsif( rising_edge(rx_clock) ) then
             case rx_mux_mode is
                 when RX_MUX_NORMAL =>
-                    rx_mux_i <= rx_sample_i ;
-                    rx_mux_q <= rx_sample_q ;
+                    rx_mux_i <= resize(rx_sample_i, rx_mux_i'length) ;
+                    rx_mux_q <= resize(rx_sample_q, rx_mux_q'length) ;
                     rx_mux_valid <= rx_sample_valid ;
                 when RX_MUX_12BIT_COUNTER | RX_MUX_32BIT_COUNTER =>
-                    rx_mux_i <= rx_gen_i ;
-                    rx_mux_q <= rx_gen_q ;
+                    rx_mux_i <= resize(rx_gen_i, rx_mux_i'length) ;
+                    rx_mux_q <= resize(rx_gen_q, rx_mux_q'length) ;
                     rx_mux_valid <= rx_gen_valid ;
                     if( rx_mux_mode = RX_MUX_32BIT_COUNTER ) then
                         rx_gen_mode <= '1' ;
                     else
                         rx_gen_mode <= '0' ;
                     end if ;
-                when RX_MUX_ENTROPY =>
-                    rx_mux_i <= rx_entropy_i ;
-                    rx_mux_q <= rx_entropy_q ;
-                    rx_mux_valid <= rx_entropy_valid ;
+                --when RX_MUX_ENTROPY =>
+                --    rx_mux_i <= resize(rx_entropy_i, rx_mux_i'length) ;
+                --    rx_mux_q <= resize(rx_entropy_q, rx_mux_q'length) ;
+                --    rx_mux_valid <= rx_entropy_valid ;
                 when RX_MUX_DIGITAL_LOOPBACK =>
-                    rx_mux_i <= tx_sample_raw_i ;
-                    rx_mux_q <= tx_sample_raw_q ;
+                    rx_mux_i <= resize(tx_sample_raw_i, rx_mux_i'length) ;
+                    rx_mux_q <= resize(tx_sample_raw_q, rx_mux_q'length) ;
                     rx_mux_valid <= tx_sample_raw_valid ;
+                when RX_MUX_MODE_FFT =>
+                    rx_mux_i <= resize(rx_sample_fft.Re, rx_mux_i'length) ;
+                    rx_mux_q <= resize(rx_sample_fft.Im, rx_mux_q'length) ;
+                    rx_mux_valid <= rx_sample_fft_valid ;
                 when others =>
                     rx_mux_i <= (others =>'0') ;
                     rx_mux_q <= (others =>'0') ;
@@ -960,7 +983,7 @@ begin
         rst_n => fft_reset,
         clk => rx_clock,
         din => rx_sample_fft_din,
-        din_valid => rx_sample_corrected_valid,
+        din_valid => rx_sample_valid,
         sout_a => rx_sample_fft,
         sout_b => open,
         out_sob => open,
@@ -969,8 +992,8 @@ begin
 
     fft_reset <= '0' when (rx_reset = '1' or rx_enable = '0') else '1';
 
-    rx_sample_fft_din.Im <= resize(shift_left(rx_sample_corrected_q, 10), ICPX_WIDTH) when rx_sample_corrected_valid else (others => '0');
-    rx_sample_fft_din.Re <= resize(shift_left(rx_sample_corrected_i, 10), ICPX_WIDTH) when rx_sample_corrected_valid else (others => '0');
+    rx_sample_fft_din.Re <= shift_left(resize(rx_sample_i, ICPX_WIDTH), 16) when rx_sample_valid else (others => '0');
+    rx_sample_fft_din.Im <= shift_left(resize(rx_sample_q, ICPX_WIDTH), 16) when rx_sample_valid else (others => '0');
     
 end architecture ; -- arch
 

@@ -22,23 +22,30 @@ def counter():
 		else:
 			i = -2047
 
-def binaryfile(filename):
+def binaryfile(filename, samplesize=32):
 	"""
-	Reads an interleaved raw I/Q file (16 bits/sample)
+	Reads an interleaved raw I/Q file (32 bits/sample)
 	"""
+	if samplesize == 32:
+		fmt = 'i'
+	elif samplesize == 16:
+		fmt = 'h'
+	else:
+		raise Exception("No such format for" + samplesize)
 	with open(filename, "rb") as f:
 		while True:
-			data = f.read(2)
+			data = f.read(samplesize/8)
 			if not data:
 				break
 
-			i = struct.unpack('>h', data)[0]
+			# print 'fmt' + fmt
+			i = struct.unpack('<' + fmt, data)[0]
 
-			data = f.read(2)
+			data = f.read(samplesize/8)
 			if not data:
 				break
 
-			q = struct.unpack('>h', data)[0]
+			q = struct.unpack('<' + fmt, data)[0]
 
 			yield complex(i,q)
 
@@ -72,7 +79,7 @@ def print_samples(data,fmt='hex'):
 
 	if fmt == 'hex': 
 		fmt_str = "{0:04x} {1:04x}";
-		fmt_data = [fmt_str.format(int(i.real) & 0x3fffff, int(i.imag) & 0x3fffff) for i in data]
+		fmt_data = [fmt_str.format(int(i.real) & 0xFFFFFFFF, int(i.imag) & 0xFFFFFFFF	) for i in data]
 	elif fmt == 'int':
 		fmt_str = "{0} {1}";
 		fmt_data = [fmt_str.format(int(i.real), int(i.imag)) for i in data]

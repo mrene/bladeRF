@@ -1,5 +1,5 @@
 package fft_len is
 constant LOG2_FFT_LEN : integer := 10;
 constant FFT_LEN      : integer := 2 ** LOG2_FFT_LEN;
-constant ICPX_WIDTH : integer := 22;
+constant ICPX_WIDTH : integer := 32;
 end fft_len;
