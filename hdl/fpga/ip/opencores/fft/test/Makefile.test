@@ -2,10 +2,19 @@ CC=clang
 CXX=clang++
 
 CXXFLAGS=-Wall -ggdb -std=c++14
-LDFLAGS=-lbladeRF -lpthread
+CLAGS=-Wall -ggdb -std=gnu1x
+LDFLAGS=-lbladeRF -lpthread -lm
+
+all: test ctrcheck
 
 test: test.o
 	$(CXX) $< -o $@ $(LDFLAGS)
 
+ctrcheck: ctrcheck.o
+	$(CXX) $< -o $@ $(LDFLAGS)
+
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
+
+%.o: %.cc
+	$(CC) $(CFLAGS) -c -o $@ $<

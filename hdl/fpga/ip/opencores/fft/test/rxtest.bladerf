@@ -1,11 +1,12 @@
 set frequency 540000000
-set samplerate 28000000
+set samplerate 40000000
 set bandwidth 28000000
 set lnagain 0
-set rxvga1 15
-set rxvga2 5
+set rxvga1 30
+set rxvga2 10
 
-rx config file=./data-rxfft.bin format=bin n=10240000
+
+rx config file=/tmp/data-counter.bin format=bin n=400000000 
 rx start
 
 rx wait

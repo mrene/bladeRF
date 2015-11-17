@@ -8,12 +8,12 @@ from pprint import pprint
 
 ## Data sources
 
-def counter():
+def counter(start=256):
 	"""
 	The 12-bit counter starts at 256 for the I sample, and increases by 1 until it reaches 2047,
 	at which it overflows back to -2047. Q is always set to -I.
 	"""
-	i = 256
+	i = start
 	while True:
 		yield complex(i, -i)
 
