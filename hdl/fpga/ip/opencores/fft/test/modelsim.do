@@ -27,7 +27,7 @@ vcom -work nuand -2008 ../../../altera/nios_system/simulation/nios_system.vhd
 vcom -work nuand -2008 ../../../../platforms/bladerf/vhdl/fx3_gpif.vhd
 
 vcom -work nuand -2008 ../../../../platforms/bladerf/vhdl/bladerf.vhd
-vcom -work nuand -2008 ../../../../platforms/bladerf/vhdl/bladerf-hosted.vhd
+
 
 vcom -work nuand -2008 ../../../../platforms/bladerf/vhdl/tb/bladerf_tb.vhd
 
@@ -42,6 +42,7 @@ vcom -check_synthesis -work nuand -2008 ../icpx_mul_d3.vhd
 vcom -check_synthesis -work nuand -2008 ../dpram_inf.vhd
 vcom -check_synthesis -work nuand -2008 ../fft_data_switch.vhd
 vcom -check_synthesis -work nuand -2008 ../ram_fifo.vhd
+vcom -check_synthesis -work nuand -2008 ../interleaver.vhd
 vcom -check_synthesis -work nuand -2008 ../fft_engine.vhd
 vcom -check_synthesis -work nuand -2008 ../fft_engine_tb.vhd
 
