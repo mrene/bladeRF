@@ -381,34 +381,17 @@ begin  -- fft_top_beh
 
   end generate g1;
 
- reorderer : entity work.dpram_fifo
-  generic map (
-    NUM_FRAMES => 3,
-    ADDR_WIDTH => LOG2_FFT_LEN)
-  port map (
-    clk   => clk,
-    rst_n => rst_n,
-
-    in_valid_a => valid_out(LOG2_FFT_LEN-1),
-    in_data_a => out0(LOG2_FFT_LEN-1),
-    in_addr_a => in_addr_a,
-
-    in_valid_b => valid_out(LOG2_FFT_LEN-1),
-    in_data_b => out1(LOG2_FFT_LEN-1),
-    in_addr_b => in_addr_b,
-
-    in_commit => in_commit,
-
-    read_enable => '1',
-
-    out_data_a => sout_a,
-    out_data_b => sout_b,
-    out_valid => valid,
-    out_sob => out_sob,
-
-    empty => open,
-    full => open
-  );
+  U_interleaver : entity work.interleaver
+    port map (
+      clk   => clk,
+      rst_n => rst_n,
+      in_valid_a => valid_out(LOG2_FFT_LEN-1),
+      in_data_a => out0(LOG2_FFT_LEN-1),
+      in_valid_b => valid_out(LOG2_FFT_LEN-1),
+      in_data_b => out1(LOG2_FFT_LEN-1),
+      data => sout_a,
+      valid => valid
+      );
 
   internal_valid <= started(LOG2_FFT_LEN);
   saddr     <= s_saddr;
