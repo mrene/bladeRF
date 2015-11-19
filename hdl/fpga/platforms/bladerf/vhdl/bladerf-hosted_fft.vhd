@@ -978,7 +978,7 @@ begin
 
     U_rx_fft : entity work.fft_engine
     generic map (
-        LOG2_FFT_LEN => 10)
+        LOG2_FFT_LEN => 13)
     port map (
         rst_n => fft_reset,
         clk => rx_clock,

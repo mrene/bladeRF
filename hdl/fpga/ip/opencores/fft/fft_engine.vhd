@@ -383,7 +383,7 @@ begin  -- fft_top_beh
 
  reorderer : entity work.dpram_fifo
   generic map (
-    NUM_FRAMES => 4,
+    NUM_FRAMES => 3,
     ADDR_WIDTH => LOG2_FFT_LEN)
   port map (
     clk   => clk,
