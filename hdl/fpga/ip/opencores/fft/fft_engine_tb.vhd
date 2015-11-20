@@ -224,9 +224,9 @@ begin  -- beh1
 
           din_valid <= '1';
           --din <= cplx2icpx(complex'(tre, tim));
-           din <= stlv2icpx(data);
-          --din.Re <= resize(signed(data(37 downto 22)), ICPX_WIDTH);
-          --din.Im <= resize(signed(data(15 downto 0)), ICPX_WIDTH);
+          -- din <= stlv2icpx(data);
+          din.Re <= resize(signed(data(37 downto 22)), ICPX_WIDTH);
+          din.Im <= resize(signed(data(15 downto 0)), ICPX_WIDTH);
         end if;
       else
         din_valid <= '0';

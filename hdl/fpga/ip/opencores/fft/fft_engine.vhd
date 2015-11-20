@@ -385,15 +385,18 @@ begin  -- fft_top_beh
     port map (
       clk   => clk,
       rst_n => rst_n,
-      in_valid_a => valid_out(LOG2_FFT_LEN-1),
-      in_data_a => out0(LOG2_FFT_LEN-1),
-      in_valid_b => valid_out(LOG2_FFT_LEN-1),
-      in_data_b => out1(LOG2_FFT_LEN-1),
-      data => sout_a,
-      valid => valid
-      );
+      in_valid_a  => internal_valid,
+      in_data_a   => out0(LOG2_FFT_LEN-1),
 
-  internal_valid <= started(LOG2_FFT_LEN);
+      in_valid_b  => internal_valid,
+      in_data_b   => out1(LOG2_FFT_LEN-1),
+
+      data  => sout_a,
+      valid => valid
+    );
+
+  internal_valid <=  valid_out(LOG2_FFT_LEN-1) when start_dr(LOG2_FFT_LEN-1) = '1' else '0';
+  
   saddr     <= s_saddr;
   saddr_rev <= rev(s_saddr);
   sout0     <= out0(LOG2_FFT_LEN-1);
