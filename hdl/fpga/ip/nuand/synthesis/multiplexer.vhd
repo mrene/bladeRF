@@ -9,10 +9,10 @@ library ieee;
 
 library work;
 
-package multiplexer is
+package multiplexer_p is
     type stream_t is record
         -- Avalon-ST interface
-        clk   : std_logic ;
+        clock : std_logic ;
         data  :  std_logic_vector(31 downto 0) ;
         valid :  std_logic ;
         startofpacket : std_logic ;
@@ -31,7 +31,7 @@ library ieee;
     use ieee.math_real.all;
 
 library work;
-    use work.multiplexer.all;
+    use work.multiplexer_p.all;
 
 entity multiplexer is
     generic(
@@ -40,7 +40,7 @@ entity multiplexer is
     );
     port (
         -- Output clock domain
-        clk : in std_logic ;
+        clock : in std_logic ;
         reset : in std_logic ;
         data : out std_logic_vector(31 downto 0) ;
         valid : out std_logic ;
@@ -51,7 +51,7 @@ end entity ;
 
 architecture rtl of multiplexer is
 
-    type fifo_t is record
+    type mux_fifo_t is record
         aclr    :   std_logic ;
 
         wclock  :   std_logic ;
@@ -67,12 +67,15 @@ architecture rtl of multiplexer is
         rempty  :   std_logic ;
         rfull   :   std_logic ;
         rused   :   std_logic_vector(11 downto 0) ;
+
     end record ;
 
-    type state_t is ( ST_IDLE, ST_HEADER, ST_DATA ) ;
-    type fifo_array_t is array (inputs'range) of fifo_t ;
+    type state_t is ( ST_IDLE, ST_CHECK, ST_HEADER, ST_DATA ) ;
+    type fifo_array_t is array (inputs'range) of mux_fifo_t ;
     
     signal fifos         : fifo_array_t ;
+    signal current_fifo  : mux_fifo_t ;
+    signal current_rreq  : std_logic := '0';
     signal stream_id     : natural range inputs'range ;
     signal state         : state_t ;
     signal data_length   : unsigned(15 downto 0) ;
@@ -80,7 +83,7 @@ architecture rtl of multiplexer is
 
 begin
     -- Wire the inputs to their respective FIFOs
-    input_map : for i in inputs'range generate
+    input_stage : for i in inputs'range generate
         U_fifo : entity work.multiplexer_fifo
           port map (
             aclr                => fifos(i).aclr,
@@ -98,33 +101,36 @@ begin
             wrusedw             => fifos(i).wused
           );
 
-        fifos(i).wclock <= inputs(i).clk ;
+        fifos(i).wclock <= inputs(i).clock ;
         fifos(i).wdata <= inputs(i).data ;
-        fifos(i).wreq <= inputs(i).valid and inputs(i).enabled ;
+        fifos(i).wreq <= inputs(i).valid;
 
-        fifos(i).rclock <= clk ;
-        fifos(i).aclr <= reset or not inputs(i).enabled ;        
+        fifos(i).rclock <= clock ;
+        fifos(i).aclr <= '0';
+        fifos(i).rreq <= current_rreq when stream_id = i else '0';
 
-        --flaghandler : process(inputs(i).clk, rst)
+        --flaghandler : process(inputs(i).clock, rst)
         --begin
         --   if reset = '1' then
 
-        --   elsif rising_edge(inputs(i).clk) then
+        --   elsif rising_edge(inputs(i).clock) then
 
         --   end if;
         --end
 
     end generate;
 
-    data <= fifos(stream_id).rdata when state = ST_DATA else internal_data;
+    current_fifo <= fifos(stream_id);
+    data <= current_fifo.rdata when state = ST_DATA else internal_data;
 
-    packetizer : process(clk, reset)
+    packetizer : process(clock, reset)
     begin
         if reset = '1' then
             state <= ST_IDLE;
             stream_id <= 0;
             valid <= '0';
-        elsif rising_edge(clk) then
+            current_rreq <= '0';
+        elsif rising_edge(clock) then
             case state is
                 when ST_IDLE =>
                     -- Increment the stream id to evaluate the next input
@@ -134,30 +140,29 @@ begin
                         stream_id <= stream_id + 1;
                     end if;
 
+                    state <= ST_CHECK;
+
+                when ST_CHECK =>
                     -- Switch to the header state if this stream contains pending data
-                    if inputs(stream_id).enabled = '1' and fifos(stream_id).rempty = '0' then
-                        state <= ST_HEADER;
-                    end if;
-
-                when ST_HEADER =>
-                    if unsigned(fifos(stream_id).rused) <= PACKET_LEN/4 then
-                        data_length <= resize(unsigned(fifos(stream_id).rused), data_length'length);
+                    if inputs(stream_id).enabled = '1' 
+                        and current_fifo.rempty = '0' 
+                        and unsigned(current_fifo.rused) >= PACKET_LEN/4 then
+                            data_length <= to_unsigned(PACKET_LEN/4, data_length'length);                        
+                            internal_data <= std_logic_vector(to_unsigned(PACKET_LEN, 16)) & std_logic_vector(to_unsigned(stream_id, 8)) & x"FF"; -- TODO: Set flags for startofpacket/endofpacket
+                            valid <= '1';
+                            state <= ST_HEADER;
                     else
-                        data_length <= to_unsigned(PACKET_LEN/4, data_length'length);
+                        state <= ST_CHECK;
                     end if;
 
-                    internal_data <= std_logic_vector(resize(data_length*4, 16)) & std_logic_vector(to_unsigned(stream_id, 8)) & x"FF"; -- TODO: Set flags for startofpacket/endofpacket
-                    valid <= '1';
-
-                    -- Request read on this fifo
-                    fifos(stream_id).rreq <= '1';
-                    valid <= '1';
+                when ST_HEADER =>    
                     state <= ST_DATA;
+                    current_rreq <= '1';
 
                 when ST_DATA =>
                     data_length <= data_length - 1;
                     if data_length = 0 then
-                        fifos(stream_id).rreq <= '0';
+                        current_rreq <= '0';
                         valid <= '0';
                         state <= ST_IDLE ;
                     end if;

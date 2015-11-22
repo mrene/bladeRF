@@ -125,7 +125,7 @@ BEGIN
 		overflow_checking => "ON",
 		rdsync_delaypipe => 5,
 		read_aclr_synch => "ON",
-		underflow_checking => "OFF",
+		underflow_checking => "ON",
 		use_eab => "ON",
 		write_aclr_synch => "ON",
 		wrsync_delaypipe => 5
@@ -170,7 +170,7 @@ END SYN;
 -- Retrieval info: PRIVATE: Optimize NUMERIC "2"
 -- Retrieval info: PRIVATE: RAM_BLOCK_TYPE NUMERIC "0"
 -- Retrieval info: PRIVATE: SYNTH_WRAPPER_GEN_POSTFIX STRING "0"
--- Retrieval info: PRIVATE: UNDERFLOW_CHECKING NUMERIC "1"
+-- Retrieval info: PRIVATE: UNDERFLOW_CHECKING NUMERIC "0"
 -- Retrieval info: PRIVATE: UsedW NUMERIC "1"
 -- Retrieval info: PRIVATE: Width NUMERIC "32"
 -- Retrieval info: PRIVATE: dc_aclr NUMERIC "1"
@@ -195,7 +195,7 @@ END SYN;
 -- Retrieval info: CONSTANT: OVERFLOW_CHECKING STRING "ON"
 -- Retrieval info: CONSTANT: RDSYNC_DELAYPIPE NUMERIC "5"
 -- Retrieval info: CONSTANT: READ_ACLR_SYNCH STRING "ON"
--- Retrieval info: CONSTANT: UNDERFLOW_CHECKING STRING "OFF"
+-- Retrieval info: CONSTANT: UNDERFLOW_CHECKING STRING "ON"
 -- Retrieval info: CONSTANT: USE_EAB STRING "ON"
 -- Retrieval info: CONSTANT: WRITE_ACLR_SYNCH STRING "ON"
 -- Retrieval info: CONSTANT: WRSYNC_DELAYPIPE NUMERIC "5"

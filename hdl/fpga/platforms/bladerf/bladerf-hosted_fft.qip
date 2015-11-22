@@ -9,6 +9,7 @@ set_global_assignment -name QIP_FILE [file normalize [file join $here ../../ip/a
 set_global_assignment -name QIP_FILE [file normalize [file join $here ../../ip/altera/tx_fifo/tx_fifo.qip]]
 set_global_assignment -name QIP_FILE [file normalize [file join $here ../../ip/altera/tx_meta_fifo/tx_meta_fifo.qip]]
 set_global_assignment -name QIP_FILE [file normalize [file join $here ../../ip/altera/rx_meta_fifo/rx_meta_fifo.qip]]
+set_global_assignment -name QIP_FILE [file normalize [file join $here ../../ip/altera/multiplexer_fifo/multiplexer_fifo.qip]]
 
 # Explicitly include Nios mem_init
 set_global_assignment -name QIP_FILE [file normalize [file join $here ../../ip/altera/nios_system/software/bladeRF_nios/mem_init/meminit.qip]]
@@ -25,7 +26,7 @@ set_global_assignment -name VHDL_FILE [file normalize [file join $here ../../ip/
 set_global_assignment -name VHDL_FILE [file normalize [file join $here ../../ip/opencores/fft/icpx_mul_d3.vhd]]
 set_global_assignment -name VHDL_FILE [file normalize [file join $here ../../ip/opencores/fft/dpram_inf.vhd]]
 set_global_assignment -name VHDL_FILE [file normalize [file join $here ../../ip/opencores/fft/fft_data_switch.vhd]]
-set_global_assignment -name VHDL_FILE [file normalize [file join $here ../../ip/opencores/fft/ram_fifo.vhd]]
+set_global_assignment -name VHDL_FILE [file normalize [file join $here ../../ip/opencores/fft/interleaver.vhd]]
 set_global_assignment -name VHDL_FILE [file normalize [file join $here ../../ip/opencores/fft/fft_engine.vhd]]
 
 # Implementation details
