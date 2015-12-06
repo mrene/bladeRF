@@ -31,7 +31,6 @@ entity fft is
         aso_out_startofpacket : out std_logic;
         aso_out_endofpacket   : out std_logic;
 
-
         -- Avalon-MM Slave
         avs_config_address       : in  std_logic_vector(ADDR_WIDTH-1 downto 0);
         avs_config_read          : in  std_logic;
