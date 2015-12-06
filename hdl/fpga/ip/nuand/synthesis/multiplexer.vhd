@@ -116,7 +116,7 @@ begin
         --   elsif rising_edge(inputs(i).clock) then
 
         --   end if;
-        --end
+        --end process;
 
     end generate;
 
@@ -147,15 +147,17 @@ begin
                     if inputs(stream_id).enabled = '1' 
                         and current_fifo.rempty = '0' 
                         and unsigned(current_fifo.rused) >= PACKET_LEN/4 then
+                            -- Output header here so it can be outputted at the next clock cycle
+                            -- (when internal_data will propagate to data)
                             data_length <= to_unsigned(PACKET_LEN/4, data_length'length);                        
                             internal_data <= std_logic_vector(to_unsigned(PACKET_LEN, 16)) & std_logic_vector(to_unsigned(stream_id, 8)) & x"FF"; -- TODO: Set flags for startofpacket/endofpacket
                             valid <= '1';
                             state <= ST_HEADER;
                     else
-                        state <= ST_CHECK;
+                        state <= ST_IDLE;
                     end if;
 
-                when ST_HEADER =>    
+                when ST_HEADER =>
                     state <= ST_DATA;
                     current_rreq <= '1';
 

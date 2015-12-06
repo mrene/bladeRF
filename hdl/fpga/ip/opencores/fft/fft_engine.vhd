@@ -39,14 +39,9 @@ entity fft_engine is
     din       : in  icpx_number;        -- data input
     din_valid : in std_logic;
     valid     : out std_logic;
-    --saddr     : out unsigned(LOG2_FFT_LEN-2 downto 0);
-    --saddr_rev : out unsigned(LOG2_FFT_LEN-2 downto 0);
-    sout_a     : out icpx_number;
-    sout_b    : out icpx_number;
-    out_sob  : out std_logic
-
-    --sout0     : out icpx_number;        -- spectrum output
-    --sout1     : out icpx_number         -- spectrum output
+    sout     : out icpx_number;
+    out_sob  : out std_logic;
+    out_eob  : out std_logic
     );
 
 end fft_engine;
@@ -152,13 +147,13 @@ architecture fft_engine_beh of fft_engine is
   -- Debugging purposes
   signal saddr     : unsigned(LOG2_FFT_LEN-2 downto 0);
   signal saddr_rev : unsigned(LOG2_FFT_LEN-2 downto 0);
-  signal sout0     : icpx_number;        -- spectrum output
-  signal sout1     : icpx_number;         -- spectrum output
 
   signal internal_valid : std_logic;
   signal in_commit      : std_logic;
 
   signal ram_valid : std_logic;
+
+  signal eob_internal : std_logic;
 
 begin  -- fft_top_beh
 
@@ -391,7 +386,7 @@ begin  -- fft_top_beh
       in_valid_b  => internal_valid,
       in_data_b   => out1(LOG2_FFT_LEN-1),
 
-      data  => sout_a,
+      data  => sout,
       valid => valid
     );
 
@@ -399,14 +394,18 @@ begin  -- fft_top_beh
   
   saddr     <= s_saddr;
   saddr_rev <= rev(s_saddr);
-  sout0     <= out0(LOG2_FFT_LEN-1);
-  sout1     <= out1(LOG2_FFT_LEN-1);
 
-  --sout_a <= out0(LOG2_FFT_LEN-1);
-  --sout_b <= out1(LOG2_FFT_LEN-1);
+  eob_internal <= '1' when (s_saddr = (2 ** (LOG2_FFT_LEN-1) - 1)) and valid_out(LOG2_FFT_LEN-1) = '1' else '0' ;
+  out_sob <= '1' when (s_saddr = 0 and internal_valid = '1') else '0' ;
 
-
-  in_commit <= '1' when (s_saddr = (2 ** (LOG2_FFT_LEN-1) - 1)) and valid_out(LOG2_FFT_LEN-1) = '1' else '0';
+  eob_delay : process (clk, rst_n)
+  begin
+    if rst_n = '0' then
+      out_eob <= '0';
+    elsif rising_edge(clk) then
+      out_eob <= eob_internal;
+    end if;
+  end process;
   
   in_addr_a <= '0' & std_logic_vector(saddr_rev);
   in_addr_b <= '1' & std_logic_vector(saddr_rev);

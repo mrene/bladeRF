@@ -61,6 +61,9 @@ begin
 			clock => clock,
 			reset => reset,
 
+			data => mux_out,
+			valid => mux_valid,
+
 			inputs(0).clock => clock,
 			inputs(0).data => data_a,
 			inputs(0).valid => siggen_a_valid,
@@ -73,10 +76,7 @@ begin
 			inputs(1).valid => siggen_b_valid,
 			inputs(1).enabled => '1',
 			inputs(1).startofpacket => '0',
-			inputs(1).endofpacket => '0',
-
-			data => mux_out,
-			valid => mux_valid
+			inputs(1).endofpacket => '0'
 		);
 
 	data_a <= std_logic_vector(siggen_a_i & siggen_a_q);
