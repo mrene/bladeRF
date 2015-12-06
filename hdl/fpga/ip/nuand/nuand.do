@@ -2,6 +2,7 @@ proc compile_nuand { root } {
     vlib nuand
 
     vcom -work nuand -2008 [file join $root ../altera/tx_fifo/tx_fifo.vhd]
+    vcom -work nuand -2008 [file join $root ../altera/rx_fifo/rx_fifo.vhd]
 
 
     vcom -work nuand -2008 [file join $root ./synthesis/constellation_mapper.vhd]
@@ -33,5 +34,11 @@ proc compile_nuand { root } {
 
     vcom -work nuand -2008 [file join $root ./simulation/fx3_model.vhd]
     vcom -work nuand -2008 [file join $root ./simulation/lms6002d_model.vhd]
+
+    vcom -work nuand -2008 [file join $root ../altera/multiplexer_fifo/multiplexer_fifo.vhd]
+
+    vcom -work nuand -2008 [file join $root ./synthesis/signal_generator.vhd]
+    vcom -work nuand -2008 [file join $root ./synthesis/multiplexer.vhd]
+    vcom -work nuand -2008 [file join $root ./synthesis/tb/multiplexer_tb.vhd]
 }
 

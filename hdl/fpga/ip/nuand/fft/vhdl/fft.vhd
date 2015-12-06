@@ -161,8 +161,10 @@ begin
         valid     => valid
     );
 
-    out_i <= sample_fft.Re(15 downto 0);
-    out_q <= sample_fft.Im(15 downto 0);
+
+    -- FIXME - Hand-adjusted window
+    out_i <= sample_fft.Re(17 downto 2);
+    out_q <= sample_fft.Im(17 downto 2);
 
     aso_out_data <= std_logic_vector(out_i & out_q);
     aso_out_startofpacket <= startofpacket;
