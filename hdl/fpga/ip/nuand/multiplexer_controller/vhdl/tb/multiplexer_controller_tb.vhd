@@ -5,12 +5,12 @@ library ieee ;
 library nuand;
     use nuand.util.all;
 
-entity fft_tb is
+entity multiplexer_controller_tb is
 end entity ;
 
-architecture arch of fft_tb is
+architecture arch of multiplexer_controller_tb is
 
-	procedure mm_write(
+	procedure mm_write32(
         signal clock    :   in  std_logic ;
         signal addr     :   out std_logic_vector(7 downto 0) ;
         signal data     :   out std_logic_vector(31 downto 0) ;
@@ -28,7 +28,7 @@ architecture arch of fft_tb is
     end procedure ;
 
 
-    procedure mm_read(
+    procedure mm_read32(
     	signal clock 	: in  std_logic;
     	signal addr 	: out std_logic_vector(7 downto 0);
     	signal data		: in  std_logic_vector(31 downto 0);
@@ -45,11 +45,48 @@ architecture arch of fft_tb is
 	    read <= '0';
     end procedure;
 
+
+    procedure mm_write8(
+        signal clock    :   in  std_logic ;
+        signal addr     :   out std_logic_vector(7 downto 0) ;
+        signal data     :   out std_logic_vector(7 downto 0) ;
+        signal write    :   out std_logic ;
+               address  :   unsigned(7 downto 0);
+               value    :   unsigned(7 downto 0)
+    ) is
+    begin
+        addr <= std_logic_vector(address) ;
+        data <= std_logic_vector(value) ;
+        write <= '1' ;
+        wait until rising_edge(clock) ;
+        write <= '0' ;
+        wait until rising_edge(clock) ;
+    end procedure ;
+
+
+    procedure mm_read8(
+        signal clock    : in  std_logic;
+        signal addr     : out std_logic_vector(7 downto 0);
+        signal data     : in  std_logic_vector(7 downto 0);
+        signal read     : out std_logic;
+               address  : unsigned(7 downto 0);
+        variable result : out  unsigned(7 downto 0)
+    ) is
+    begin
+        wait until rising_edge(clock);
+        addr <= std_logic_vector(address) ;
+        read <= '1';
+        wait until rising_edge(clock);
+        result := unsigned(data);
+        read <= '0';
+    end procedure;
+
 	signal clock : std_logic := '0';
 	signal reset : std_logic := '1';
 
 	-- Avalon-ST Sink (Input)
     signal asi_in_data  : std_logic_vector(31 downto 0) := (others => '0');
+    signal fft_asi_in_data  : std_logic_vector(31 downto 0) := (others => '0');
     signal asi_in_valid : std_logic := '0';
 
     -- Avalon-ST Source (FFT Output)
@@ -74,9 +111,9 @@ architecture arch of fft_tb is
     -- Avalon-MM Slave (Multiplexer)
     signal mx_avs_config_address       :  std_logic_vector(7 downto 0);
     signal mx_avs_config_read          :  std_logic := '0';
-    signal mx_avs_config_readdata      : std_logic_vector(31 downto 0);
+    signal mx_avs_config_readdata      : std_logic_vector(7 downto 0);
     signal mx_avs_config_write         :  std_logic := '0';
-    signal mx_avs_config_writedata     :  std_logic_vector(31 downto 0);
+    signal mx_avs_config_writedata     :  std_logic_vector(7 downto 0);
 
 
     type fifo_t is record
@@ -127,8 +164,8 @@ begin
     		reset => reset,
     		clock => clock,
 
-    		data 	   => fft_aso_out_data,
-    		data_valid => fft_aso_out_valid
+    		data 	   => aso_out_data,
+    		data_valid => aso_out_valid
     	);
 
     U_processing_fifo : entity work.multiplexer_fifo
@@ -178,7 +215,7 @@ begin
     		clock => clock,
     		reset => reset,
 
-    		asi_in_data  => asi_in_data,
+    		asi_in_data  => fft_asi_in_data,
     		asi_in_valid => asi_in_valid,
 
     		aso_out_data 		  => fft_aso_out_data,
@@ -208,16 +245,23 @@ begin
             asi_in1_data => fft_aso_out_data,
             asi_in1_valid => fft_aso_out_valid,
             asi_in1_startofpacket => fft_aso_out_startofpacket,
-            asi_in_1_endofpacket => fft_aso_out_endofpacket,
+            asi_in1_endofpacket => fft_aso_out_endofpacket,
 
             aso_out_data  => aso_out_data,
-            aso_out_valid => aso_out_valid
-        )
+            aso_out_valid => aso_out_valid,
+
+            avs_config_address   => mx_avs_config_address,
+            avs_config_read      => mx_avs_config_read,
+            avs_config_readdata  => mx_avs_config_readdata,
+            avs_config_write     => mx_avs_config_write,
+            avs_config_writedata => mx_avs_config_writedata
+        );
 
 
     -- Mapping to our Avalon-ST interface
-    asi_in_data(31 downto 16) <= rx_processing_data(15 downto 0);
-    asi_in_data(15 downto 0) <= rx_processing_data(31 downto 16);
+    fft_asi_in_data(31 downto 16) <= rx_processing_data(15 downto 0);
+    fft_asi_in_data(15 downto 0) <= rx_processing_data(31 downto 16);
+    asi_in_data <= rx_processing_data;
     asi_in_valid <= rx_processing_valid;
 
     tb : process
@@ -232,20 +276,20 @@ begin
 
         -- Set a countdown of 16384 samples
         ts := to_unsigned(16384, ts'length);
-        mm_write(clock, avs_config_address, avs_config_writedata, avs_config_write, to_unsigned(1, 8), ts(63 downto 32)) ;
-        mm_write(clock, avs_config_address, avs_config_writedata, avs_config_write, to_unsigned(2, 8), ts(31 downto 0)) ;
+        mm_write32(clock, avs_config_address, avs_config_writedata, avs_config_write, to_unsigned(1, 8), ts(63 downto 32)) ;
+        mm_write32(clock, avs_config_address, avs_config_writedata, avs_config_write, to_unsigned(2, 8), ts(31 downto 0)) ;
 
         -- Enable module
-        mm_write(clock, avs_config_address, avs_config_writedata, avs_config_write, to_unsigned(0, 8), to_unsigned(1, 32)) ;
+        mm_write32(clock, avs_config_address, avs_config_writedata, avs_config_write, to_unsigned(0, 8), to_unsigned(1, 32)) ;
 
         -- Enable output streams
-        mm_write(clock, mx_avs_config_address, mx_avs_config_writedata, mx_avs_config_write, to_unsigned(0,8), x"ff") ;
+        mm_write8(clock, mx_avs_config_address, mx_avs_config_writedata, mx_avs_config_write, to_unsigned(0,8), x"ff") ;
 
         -- Make sure we can read the same thing
         ts := to_unsigned(0, ts'length);
 
-        mm_read(clock, avs_config_address, avs_config_readdata, avs_config_read, to_unsigned(1, 8), ts(63 downto 32));
-        mm_read(clock, avs_config_address, avs_config_readdata, avs_config_read, to_unsigned(1, 8), ts(31 downto 0));
+        mm_read32(clock, avs_config_address, avs_config_readdata, avs_config_read, to_unsigned(1, 8), ts(63 downto 32));
+        mm_read32(clock, avs_config_address, avs_config_readdata, avs_config_read, to_unsigned(1, 8), ts(31 downto 0));
 
         -- TODO: Asset read value
 

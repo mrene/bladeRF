@@ -13,7 +13,7 @@ library work;
     use work.fft_support_pkg.all;
     use work.multiplexer_p.all;
 
-entity multiplexer_controler is
+entity multiplexer_controller is
     generic (
         -- Config register settings
         ADDR_WIDTH : positive := 8;
@@ -49,7 +49,7 @@ entity multiplexer_controler is
 	);
 end entity;
 
-architecture rtl of multiplexer_controler is
+architecture rtl of multiplexer_controller is
 	signal enabled	: std_logic_vector(1 downto 0) := (others => '1');
 begin
 

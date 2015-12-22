@@ -81,6 +81,9 @@ architecture rtl of multiplexer is
     signal data_length   : unsigned(15 downto 0) ;
     signal internal_data : std_logic_vector(31 downto 0) ;
 
+    signal current_rreq_d : std_logic ;
+    signal internal_valid : std_logic ;
+
 begin
     -- Wire the inputs to their respective FIFOs
     input_stage : for i in inputs'range generate
@@ -122,13 +125,21 @@ begin
 
     current_fifo <= fifos(stream_id);
     data <= current_fifo.rdata when state = ST_DATA else internal_data;
+    valid <= current_rreq_d when state = ST_DATA else internal_valid;
+
+    delay_rreq : process(clock)
+    begin
+        if rising_edge(clock) then
+            current_rreq_d <= current_rreq;
+        end if;
+    end process;
 
     packetizer : process(clock, reset)
     begin
         if reset = '1' then
             state <= ST_IDLE;
             stream_id <= 0;
-            valid <= '0';
+            internal_valid <= '0';
             current_rreq <= '0';
         elsif rising_edge(clock) then
             case state is
@@ -151,22 +162,24 @@ begin
                             -- (when internal_data will propagate to data)
                             data_length <= to_unsigned(PACKET_LEN/4, data_length'length);                        
                             internal_data <= std_logic_vector(to_unsigned(PACKET_LEN, 16)) & std_logic_vector(to_unsigned(stream_id, 8)) & x"FF"; -- TODO: Set flags for startofpacket/endofpacket
-                            valid <= '1';
+                            internal_valid <= '1';
                             state <= ST_HEADER;
+                            current_rreq <= '1';
                     else
                         state <= ST_IDLE;
                     end if;
 
                 when ST_HEADER =>
+                    internal_valid <= '0';
                     state <= ST_DATA;
-                    current_rreq <= '1';
 
                 when ST_DATA =>
                     data_length <= data_length - 1;
+
                     if data_length = 0 then
-                        current_rreq <= '0';
-                        valid <= '0';
                         state <= ST_IDLE ;
+                    elsif data_length = 1 then
+                        current_rreq <= '0';
                     end if;
 
             end case;

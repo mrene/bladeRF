@@ -3,6 +3,7 @@ vlib nuand
 vcom -work nuand -2008 ../../simulation/util.vhd
 vcom -work nuand -2008 ../../synthesis/sampling_bridge.vhd
 vcom -work nuand -2008 ../../../altera/multiplexer_fifo/multiplexer_fifo.vhd
+vcom -work nuand -2008 ../../synthesis/multiplexer.vhd
 
 vcom -work nuand -2008 ../../../opencores/fft/fft_len.vhd
 vcom -work nuand -2008 ../../../opencores/fft/icpx_pkg.vhd
@@ -19,6 +20,5 @@ vcom -work nuand -2008 ../../../opencores/fft/fft_engine.vhd
 
 vcom -work nuand -2008 ../../fft/vhdl/fft.vhd
 
-vcom -work nuand -2008 ../vhdl/multiplexer.vhd
-vcom -work nuand -2008 ../vhdl/tb/multiplexer_tb.vhd
-
+vcom -work nuand -2008 ../vhdl/multiplexer_controller.vhd
+vcom -work nuand -2008 ../vhdl/tb/multiplexer_controller_tb.vhd
