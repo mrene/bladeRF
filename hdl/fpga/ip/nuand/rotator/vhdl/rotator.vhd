@@ -69,10 +69,10 @@ begin
 	nco_inputs.valid  <= enabled when ready = '0' else asi_in_valid;
 
 	-- Expose our readiness to the Avalon-ST sink interface
-	asi_in_ready <= ready;
+	asi_in_ready <= ready when enabled = '1' else '1';
 
-	aso_out_data <= std_logic_vector(resize(shift_right(out_i,OUTPUT_SHIFT), 16) & resize(shift_right(out_q,OUTPUT_SHIFT), 16));
-	aso_out_valid <= out_valid;
+	aso_out_data <= std_logic_vector(resize(shift_right(out_i,OUTPUT_SHIFT), 16) & resize(shift_right(out_q,OUTPUT_SHIFT), 16)) when enabled = '1' else asi_in_data;
+	aso_out_valid <= out_valid when enabled = '1' else asi_in_valid;
 
 
 	multiplier : process(clock, reset)

@@ -59,8 +59,8 @@ begin
     in_q <= signed(asi_in_data(15 downto 0));
     in_valid <= asi_in_valid;
 
-    aso_out_data <= std_logic_vector(out_i) & std_logic_vector(out_q);
-    aso_out_valid <= out_valid;
+    aso_out_data <= std_logic_vector(out_i) & std_logic_vector(out_q) when enabled = '1' else asi_in_data;
+    aso_out_valid <= out_valid when enabled = '1' else asi_in_valid;
 
     mm_read : process(clock) 
         variable addr : integer;

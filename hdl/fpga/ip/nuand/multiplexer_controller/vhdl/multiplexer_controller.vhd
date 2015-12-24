@@ -8,9 +8,6 @@ library ieee;
     use ieee.math_real.all;
 
 library work;
-    use work.fft_len.all;
-    use work.icpx.all;
-    use work.fft_support_pkg.all;
     use work.multiplexer_p.all;
 
 entity multiplexer_controller is
