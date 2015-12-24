@@ -90,9 +90,9 @@ begin
         if( reset = '1' ) then
             xyzs <= (others =>(x => (others =>'0'), y => (others =>'0'), z => (others =>'0'), valid => '0')) ;
         elsif( rising_edge( clock ) ) then
-            -- First stage will rotate the vector to be within -pi/2 to pi/2
-            xyzs(0).valid <= inputs.valid ;
             if( inputs.valid = '1' ) then
+                -- First stage will rotate the vector to be within -pi/2 to pi/2
+                xyzs(0).valid <= inputs.valid ;
                 case mode is
                     when CORDIC_ROTATION =>
                         -- Make sure we're only rotating -pi/2 to pi/2 and adjust accordingly
@@ -126,39 +126,40 @@ begin
                         end if ;
                 end case ;
 
+                -- Run through all the other stages
+                for i in 0 to xyzs'high-1 loop
+                    xyzs(i+1).valid <= xyzs(i).valid ;
+                    if( xyzs(i).valid = '1' ) then
+                        case mode is
+                            when CORDIC_ROTATION =>
+                                if( xyzs(i).z < 0 ) then
+                                    xyzs(i+1).x <= xyzs(i).x + shift_right(xyzs(i).y, i) ;
+                                    xyzs(i+1).y <= xyzs(i).y - shift_right(xyzs(i).x, i) ;
+                                    xyzs(i+1).z <= xyzs(i).z + K(i) ;
+                                else
+                                    xyzs(i+1).x <= xyzs(i).x - shift_right(xyzs(i).y, i) ;
+                                    xyzs(i+1).y <= xyzs(i).y + shift_right(xyzs(i).x, i) ;
+                                    xyzs(i+1).z <= xyzs(i).z - K(i) ;
+                                end if ;
+                            when CORDIC_VECTORING =>
+                                if( xyzs(i).y < 0 ) then
+                                    xyzs(i+1).x <= xyzs(i).x - shift_right(xyzs(i).y, i) ;
+                                    xyzs(i+1).y <= xyzs(i).y + shift_right(xyzs(i).x, i) ;
+                                    xyzs(i+1).z <= xyzs(i).z - K(i) ;
+                                else
+                                    xyzs(i+1).x <= xyzs(i).x + shift_right(xyzs(i).y, i) ;
+                                    xyzs(i+1).y <= xyzs(i).y - shift_right(xyzs(i).x, i) ;
+                                    xyzs(i+1).z <= xyzs(i).z + K(i) ;
+                                end if ;
+                        end case ;
+                    end if ;
+                end loop ;
+                
+                -- Output stage
+                outputs <= xyzs(xyzs'high) ;
+            else
+                outputs.valid <= '0';
             end if ;
-
-            -- Run through all the other stages
-            for i in 0 to xyzs'high-1 loop
-                xyzs(i+1).valid <= xyzs(i).valid ;
-                if( xyzs(i).valid = '1' ) then
-                    case mode is
-                        when CORDIC_ROTATION =>
-                            if( xyzs(i).z < 0 ) then
-                                xyzs(i+1).x <= xyzs(i).x + shift_right(xyzs(i).y, i) ;
-                                xyzs(i+1).y <= xyzs(i).y - shift_right(xyzs(i).x, i) ;
-                                xyzs(i+1).z <= xyzs(i).z + K(i) ;
-                            else
-                                xyzs(i+1).x <= xyzs(i).x - shift_right(xyzs(i).y, i) ;
-                                xyzs(i+1).y <= xyzs(i).y + shift_right(xyzs(i).x, i) ;
-                                xyzs(i+1).z <= xyzs(i).z - K(i) ;
-                            end if ;
-                        when CORDIC_VECTORING =>
-                            if( xyzs(i).y < 0 ) then
-                                xyzs(i+1).x <= xyzs(i).x - shift_right(xyzs(i).y, i) ;
-                                xyzs(i+1).y <= xyzs(i).y + shift_right(xyzs(i).x, i) ;
-                                xyzs(i+1).z <= xyzs(i).z - K(i) ;
-                            else
-                                xyzs(i+1).x <= xyzs(i).x + shift_right(xyzs(i).y, i) ;
-                                xyzs(i+1).y <= xyzs(i).y - shift_right(xyzs(i).x, i) ;
-                                xyzs(i+1).z <= xyzs(i).z + K(i) ;
-                            end if ;
-                    end case ;
-                end if ;
-            end loop ;
-
-            -- Output stage
-            outputs <= xyzs(xyzs'high) ;
         end if ;
     end process ;
 
