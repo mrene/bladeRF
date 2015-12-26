@@ -142,12 +142,12 @@ begin
     in_i <= signed(asi_in_data(31 downto 16));
     in_q <= signed(asi_in_data(15 downto 0));
 
-    sample_din.Re <= shift_left(resize(in_i, ICPX_WIDTH), 14) when asi_in_valid = '1' else (others => '0');
-    sample_din.Im <= shift_left(resize(in_q, ICPX_WIDTH), 14) when asi_in_valid = '1' else (others => '0');
+    sample_din.Re <= shift_left(resize(in_i, ICPX_WIDTH), 10) when asi_in_valid = '1' else (others => '0');
+    sample_din.Im <= shift_left(resize(in_q, ICPX_WIDTH), 10) when asi_in_valid = '1' else (others => '0');
 
     U_rx_fft : entity work.fft_engine
     generic map (
-        LOG2_FFT_LEN => 14)
+        LOG2_FFT_LEN => 10)
     port map (
         rst_n     => not (reset or fft_reset),
         clk       => clock,
