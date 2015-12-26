@@ -94,10 +94,10 @@ begin
 
 			out_valid <= '0';
 
-			if not ready then
+			if ready = '0' then
 				-- The NCO hasn't outputted a valid sample yet
 				-- Check if we have a valid NCO output 
-				if nco_outputs.valid then
+				if nco_outputs.valid = '1' then
 					ready <= '1'; 
 				end if;
 			else
