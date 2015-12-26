@@ -87,6 +87,7 @@ begin
     begin
     	if reset = '1' then
             ctrl_reg <= (others => '0');
+            ctrl_reg(15 downto 0) <= (0 => '1', others => '0');
         elsif rising_edge(clock) then
             if avs_config_write = '1' then
                 case to_integer(unsigned(avs_config_address)) is
