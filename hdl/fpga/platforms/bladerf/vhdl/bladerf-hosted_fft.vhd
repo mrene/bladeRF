@@ -70,7 +70,20 @@ architecture hosted_bladerf_fft of bladerf is
         tx_tamer_ts_pps                 :   in  std_logic ;
         tx_tamer_ts_clock               :   in  std_logic ;
         tx_tamer_ts_reset               :   in  std_logic;
-        tx_tamer_ts_time                :   out std_logic_vector(63 downto 0)
+        tx_tamer_ts_time                :   out std_logic_vector(63 downto 0) ;
+
+
+        rx_ddc_in_data                  : in  std_logic_vector(31 downto 0) ;
+        rx_ddc_in_valid                 : in  std_logic ;
+
+        rx_fft_in_data                  : in  std_logic_vector(31 downto 0) ;
+        rx_fft_in_valid                 : in  std_logic ;
+
+        rx_mux_in_data                  : in  std_logic_vector(31 downto 0) ;
+        rx_mux_in_valid                 : in  std_logic ;
+
+        rx_mux_out_data                 : out std_logic_vector(31 downto 0) ;
+        rx_mux_out_valid                : out std_logic 
       );
     end component;
 
@@ -121,27 +134,9 @@ architecture hosted_bladerf_fft of bladerf is
         rused   :   std_logic_vector(11 downto 0) ;
     end record ;
 
-
-    type rx_fifo_t is record
-        aclr    :   std_logic ;
-
-        wclock  :   std_logic ;
-        wdata   :   std_logic_vector(63 downto 0) ;
-        wreq    :   std_logic ;
-        wempty  :   std_logic ;
-        wfull   :   std_logic ;
-        wused   :   std_logic_vector(11 downto 0) ;
-
-        rclock  :   std_logic ;
-        rdata   :   std_logic_vector(31 downto 0) ;
-        rreq    :   std_logic ;
-        rempty  :   std_logic ;
-        rfull   :   std_logic ;
-        rused   :   std_logic_vector(12 downto 0) ;
-    end record ;
-
-    signal rx_sample_fifo   : rx_fifo_t ;
-    signal tx_sample_fifo   : fifo_t ;
+    signal rx_sample_fifo     : fifo_t ;
+    signal rx_processing_fifo : fifo_t;
+    signal tx_sample_fifo     : fifo_t ;
 
     type meta_fifo_tx_t is record
         aclr    :   std_logic ;
@@ -191,12 +186,15 @@ architecture hosted_bladerf_fft of bladerf is
 
     signal tx_reset         : std_logic ;
     signal rx_reset         : std_logic ;
+    signal nclk_reset       : std_logic ;
 
     signal pclk_tx_enable   :   std_logic ;
     signal pclk_rx_enable   :   std_logic ;
 
     signal tx_enable        : std_logic ;
     signal rx_enable        : std_logic ;
+
+    signal nclk_rx_enable   : std_logic ;
 
     signal meta_en_tx       : std_logic ;
     signal meta_en_rx       : std_logic ;
@@ -243,12 +241,12 @@ architecture hosted_bladerf_fft of bladerf is
     signal lms_rx_data_reg      :   signed(11 downto 0) ;
     signal lms_rx_iq_select_reg :   std_logic ;
 
-    signal rx_mux_i             :   signed(31 downto 0) ;
-    signal rx_mux_q             :   signed(31 downto 0) ;
+    signal rx_mux_i             :   signed(15 downto 0) ;
+    signal rx_mux_q             :   signed(15 downto 0) ;
     signal rx_mux_valid         :   std_logic ;
 
-    signal rx_sample_corrected_i : signed(31 downto 0);
-    signal rx_sample_corrected_q : signed(31 downto 0);
+    signal rx_sample_corrected_i : signed(15 downto 0);
+    signal rx_sample_corrected_q : signed(15 downto 0);
     signal rx_sample_corrected_valid : std_logic;
 
     signal rx_sample_fft_din : icpx_number;
@@ -287,7 +285,31 @@ architecture hosted_bladerf_fft of bladerf is
     signal rx_ts_reset      :   std_logic ;
     signal tx_ts_reset      :   std_logic ;
 
+
+    signal rx_processing_data  : std_logic_vector(31 downto 0) ;
+    signal rx_processing_valid : std_logic ;
+
+
+    signal rx_ddc_in_data   : std_logic_vector(31 downto 0) ;
+    signal rx_ddc_in_valid  : std_logic ;
+
+    signal rx_fft_in_data   : std_logic_vector(31 downto 0) ;
+    signal rx_fft_in_valid  : std_logic ;
+
+    signal rx_mux_in_data   : std_logic_vector(31 downto 0) ;
+    signal rx_mux_in_valid  : std_logic ;
+
+    signal rx_mux_out_data  : std_logic_vector(31 downto 0) ;
+    signal rx_mux_out_valid : std_logic ;
+
+    -- FIXME: Those aren't really signed at this point, but it is kept like this
+    -- to avoid changing the fifo_writer component.
+    signal rx_processed_sample_i : signed(15 downto 0);
+    signal rx_processed_sample_q : signed(15 downto 0);
+    signal rx_processed_sample_valid : std_logic ;
+
 begin
+
 
     correction_tx_phase <= signed(correction_tx_phase_gain(31 downto 16));
     correction_tx_gain  <= signed(correction_tx_phase_gain(15 downto 0));
@@ -416,6 +438,16 @@ begin
         sync                =>  rx_reset
       ) ;
 
+    U_nios_reset : entity work.reset_synchronizer
+      generic map (
+        INPUT_LEVEL         =>  '1',
+        OUTPUT_LEVEL        =>  '1'
+      ) port map (
+        clock               =>  \80Mhz\,
+        async               =>  sys_rst_sync,
+        sync                =>  nclk_reset
+      ) ;
+
     U_rx_enable_sync : entity work.synchronizer
       generic map (
         RESET_LEVEL =>  '0'
@@ -424,6 +456,16 @@ begin
         clock       =>  rx_clock,
         async       =>  pclk_rx_enable,
         sync        =>  rx_enable
+      ) ;
+
+    U_rx_enable_sync_nios : entity work.synchronizer
+      generic map (
+        RESET_LEVEL =>  '0'
+      ) port map (
+        reset       =>  rx_reset,
+        clock       =>  \80MHz\,
+        async       =>  pclk_rx_enable,
+        sync        =>  nclk_rx_enable
       ) ;
 
     U_tx_enable_sync : entity work.synchronizer
@@ -479,7 +521,7 @@ begin
       );
 
     -- RX sample fifo
-    rx_sample_fifo.wclock <= rx_clock ;
+    rx_sample_fifo.wclock <= \80MHz\ ;
     rx_sample_fifo.rclock <= fx3_pclk_pll ;
     U_rx_sample_fifo : entity work.rx_fifo
       port map (
@@ -496,6 +538,26 @@ begin
         wrempty             => rx_sample_fifo.wempty,
         wrfull              => rx_sample_fifo.wfull,
         wrusedw             => rx_sample_fifo.wused
+      );
+
+    -- RX processing fifo
+    --rx_processing_fifo.wclock <= rx_clock ;
+    rx_processing_fifo.rclock <= \80MHz\  ;
+    U_rx_processing_fifo : entity work.multiplexer_fifo
+      port map (
+        aclr                => rx_processing_fifo.aclr,
+        data                => rx_processing_fifo.wdata,
+        rdclk               => rx_processing_fifo.rclock,
+        rdreq               => rx_processing_fifo.rreq,
+        wrclk               => rx_processing_fifo.wclock,
+        wrreq               => rx_processing_fifo.wreq,
+        q                   => rx_processing_fifo.rdata,
+        rdempty             => rx_processing_fifo.rempty,
+        rdfull              => rx_processing_fifo.rfull,
+        rdusedw             => rx_processing_fifo.rused,
+        wrempty             => rx_processing_fifo.wempty,
+        wrfull              => rx_processing_fifo.wfull,
+        wrusedw             => rx_processing_fifo.wused
       );
 
     -- RX meta fifo
@@ -568,13 +630,13 @@ begin
     -- Sample bridges
     U_fifo_writer : entity work.fifo_writer
       port map (
-        clock               =>  rx_clock,
-        reset               =>  rx_reset,
-        enable              =>  rx_enable,
+        clock               =>  \80MHz\,
+        reset               =>  nclk_reset,
+        enable              =>  nclk_rx_enable,
 
-        usb_speed           =>  usb_speed_rx,
-        meta_en             =>  meta_en_rx,
-        timestamp           =>  rx_timestamp,
+        usb_speed           =>  nios_gpio(7),  -- usb_speed_rx
+        meta_en             =>  nios_gpio(16), -- meta_en_rx,
+        timestamp           =>  (others => '0'), -- rx_timestamp, XXX FIXME
 
         fifo_clear          =>  rx_sample_fifo.aclr,
         fifo_full           =>  rx_sample_fifo.wfull,
@@ -587,37 +649,37 @@ begin
         meta_fifo_data      =>  rx_meta_fifo.wdata,
         meta_fifo_write     =>  rx_meta_fifo.wreq,
 
-        in_i              =>  rx_mux_i,
-        in_q              =>  rx_mux_q,
+        in_i              =>  rx_processed_sample_i,
+        in_q              =>  rx_processed_sample_q,
 
-        in_valid            =>  rx_mux_valid,
+        in_valid            =>  rx_processed_sample_valid,
 
         overflow_led        =>  rx_overflow_led,
         overflow_count      =>  rx_overflow_count,
         overflow_duration   =>  x"ffff"
       ) ;
 
-    --U_rx_iq_correction : entity work.iq_correction(rx)
-    --  generic map(
-    --    INPUT_WIDTH         => rx_sample_corrected_i'length
-    --  ) port map(
-    --    reset               => rx_reset,
-    --    clock               => rx_clock,
+    U_rx_iq_correction : entity work.iq_correction(rx)
+      generic map(
+        INPUT_WIDTH         => rx_sample_corrected_i'length
+      ) port map(
+        reset               => rx_reset,
+        clock               => rx_clock,
 
-    --    in_real             => rx_mux_i,
-    --    in_imag             => rx_mux_q,
-    --    in_valid            => rx_mux_valid,
+        in_real             => rx_mux_i,
+        in_imag             => rx_mux_q,
+        in_valid            => rx_mux_valid,
 
-    --    out_real            => rx_sample_corrected_i,
-    --    out_imag            => rx_sample_corrected_q,
-    --    out_valid           => rx_sample_corrected_valid,
+        out_real            => rx_sample_corrected_i,
+        out_imag            => rx_sample_corrected_q,
+        out_valid           => rx_sample_corrected_valid,
 
-    --    dc_real             => FPGA_DC_CORRECTION,
-    --    dc_imag             => FPGA_DC_CORRECTION,
-    --    gain                => correction_rx_gain,
-    --    phase               => correction_rx_phase,
-    --    correction_valid    => correction_valid
-    --  );
+        dc_real             => FPGA_DC_CORRECTION,
+        dc_imag             => FPGA_DC_CORRECTION,
+        gain                => correction_rx_gain,
+        phase               => correction_rx_phase,
+        correction_valid    => correction_valid
+      );
 
     U_fifo_reader : entity work.fifo_reader
       port map (
@@ -825,7 +887,15 @@ begin
         tx_tamer_ts_pps                 => '0',
         tx_tamer_ts_clock               => tx_clock,
         tx_tamer_ts_reset               => tx_ts_reset,
-        unsigned(tx_tamer_ts_time)      => tx_timestamp
+        unsigned(tx_tamer_ts_time)      => tx_timestamp,
+        rx_ddc_in_data                  => rx_ddc_in_data,
+        rx_ddc_in_valid                 => rx_ddc_in_valid,
+        rx_fft_in_data                  => rx_fft_in_data,
+        rx_fft_in_valid                 => rx_fft_in_valid,
+        rx_mux_in_data                  => rx_mux_in_data,
+        rx_mux_in_valid                 => rx_mux_in_valid,
+        rx_mux_out_data                 => rx_mux_out_data,
+        rx_mux_out_valid                => rx_mux_out_valid
       ) ;
 
     xb_gpio_direction_proc : for i in 0 to 31 generate
@@ -976,24 +1046,60 @@ begin
       ) ;
 
 
-    U_rx_fft : entity work.fft_engine
-    generic map (
-        LOG2_FFT_LEN => 13)
-    port map (
-        rst_n => fft_reset,
-        clk => rx_clock,
-        din => rx_sample_fft_din,
-        din_valid => rx_sample_valid,
-        sout_a => rx_sample_fft,
-        sout_b => open,
-        out_sob => open,
-        valid => rx_sample_fft_valid
-    ) ;
+    -- Send samples from the rx_clock domain to the NIOS clock domain
+    U_processing_bridge : entity work.processing_bridge
+        port map(
+            clock => rx_clock,
+            reset => rx_reset,
 
-    fft_reset <= '0' when (rx_reset = '1' or rx_enable = '0') else '1';
+            in_i     => rx_sample_corrected_i,
+            in_q     => rx_sample_corrected_q,
+            in_valid => rx_sample_corrected_valid,
 
-    rx_sample_fft_din.Re <= shift_left(resize(rx_sample_i, ICPX_WIDTH), 16) when rx_sample_valid else (others => '0');
-    rx_sample_fft_din.Im <= shift_left(resize(rx_sample_q, ICPX_WIDTH), 16) when rx_sample_valid else (others => '0');
-    
+            wclock => rx_processing_fifo.wclock,
+            wdata  => rx_processing_fifo.wdata,
+            wreq   => rx_processing_fifo.wreq,
+            wempty => rx_processing_fifo.wempty,
+            wfull  => rx_processing_fifo.wfull,
+            wused  => rx_processing_fifo.wused
+        ) ;
+
+
+    -- Get samples from the rx_clock domain bridge
+    U_sampling_bridge : entity work.sampling_bridge
+      port map (
+        clock => \80MHz\,
+        reset => nclk_reset,
+
+        data  => rx_processing_data,
+        valid => rx_processing_valid,
+
+        rclock => rx_processing_fifo.rclock,
+        rdata  => rx_processing_fifo.rdata,
+        rreq   => rx_processing_fifo.rreq,
+        rempty => rx_processing_fifo.rempty,
+        rfull  => rx_processing_fifo.rfull,
+        rused  => rx_processing_fifo.rused
+     );
+
+    -- Send the input sample stream down to the right chains
+
+    -- Direct down conversion
+    rx_ddc_in_data  <= rx_processing_data ;
+    rx_ddc_in_valid <= rx_processing_valid ;
+
+    -- FFT Input
+    rx_fft_in_data  <= rx_processing_data ;
+    rx_fft_in_valid <= rx_processing_valid ;
+
+    -- Multiplexed stream 0
+    rx_mux_in_data  <= rx_processing_data ;
+    rx_mux_in_valid <= rx_processing_valid ;
+
+    -- Multiplexer output
+    rx_processed_sample_i <= signed(rx_mux_out_data(31 downto 16));
+    rx_processed_sample_q <= signed(rx_mux_out_data(15 downto 0));
+    rx_processed_sample_valid <= rx_mux_out_valid;
+
 end architecture ; -- arch
 

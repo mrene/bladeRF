@@ -79,7 +79,7 @@ def print_samples(data,fmt='hex'):
 
 	if fmt == 'hex': 
 		fmt_str = "{0:04x} {1:04x}";
-		fmt_data = [fmt_str.format(int(i.real) & 0xFFFFFFFF, int(i.imag) & 0xFFFFFFFF	) for i in data]
+		fmt_data = [fmt_str.format(int(i.real) & 0xFFFF, int(i.imag) & 0xFFFF) for i in data]
 	elif fmt == 'int':
 		fmt_str = "{0} {1}";
 		fmt_data = [fmt_str.format(int(i.real), int(i.imag)) for i in data]
@@ -88,3 +88,46 @@ def print_samples(data,fmt='hex'):
 		fmt_data = [fmt_str.format(i.real, i.imag) for i in data]
 
 	print "Re\tIm\n" + "\n".join(fmt_data)
+
+def packetReader(filename):
+	with open(filename, "r") as fp:
+		while True:
+			# Read header
+			data = fp.read(4)
+			if not data:
+				break
+			header = struct.unpack('<i', data)[0]
+
+			# Swap the two shorts to copy with bladerf-cli behaviour
+			header = (header & 0xFFFF) << 16 | (header >> 16)
+
+			# First 16 bits are the data length
+			packet_len = (header >> 16) & 0xFFFF
+			packet_len = packet_len+4
+
+			stream_id = (header >> 8) & 0xFF
+
+			sanity = header & 0xFF
+
+			if sanity != 0xFF:
+				raise "Sanity check failed"
+
+			#print "Reading %d bytes\n" % packet_len
+			# fp.read(4) # Discard 4 erroneous bytes
+			data = fp.read(packet_len)
+
+			yield {
+				"packet_len": packet_len,
+				"stream_id": stream_id,
+				"data": data
+			}
+
+def packetfile(filename, stream_id):
+	stream = packetReader(filename)
+	for packet in stream:
+		if packet["stream_id"] == stream_id:
+			for j in range(0, len(packet['data']), 4):
+				i = struct.unpack('<h', packet['data'][j:j+2])[0]
+				q = struct.unpack('<h', packet['data'][j+2:j+4])[0]
+				yield complex(i,q)
+

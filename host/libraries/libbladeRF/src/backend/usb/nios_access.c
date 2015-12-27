@@ -696,3 +696,243 @@ int nios_retune(struct bladerf *dev, bladerf_module module,
 
     return status;
 }
+
+
+int nios_filter_enable(struct bladerf *dev, bladerf_module module, bool enable)
+{
+    int status = BLADERF_ERR_INVAL;
+    uint32_t value = (uint8_t)enable;
+    switch (module) {
+        case BLADERF_MODULE_RX:
+            log_verbose("Setting RX filter enable: %s\n", enable ? "true" : "false");
+            status = nios_8x32_write(dev, NIOS_PKT_8x32_TARGET_USR1, 0, value);
+            break;
+
+        default:
+            log_debug("Invalid module: %d\n", module);
+    }
+
+    if (status == 0) {
+        log_verbose("%s: Wrote %s %d\n",
+                    __FUNCTION__, module2str(module), value);
+    }
+
+    return status;
+}
+
+int nios_filter_set_coefficients(struct bladerf *dev, bladerf_module module, int16_t *coefficients, size_t len)
+{
+    int status = BLADERF_ERR_INVAL;
+
+    if (len % 2 != 0) {
+        log_error("%s: coefficients are complex and must be passed as pairs\n", __FUNCTION__);
+        return status;
+    }
+
+    switch (module) {
+        case BLADERF_MODULE_RX:
+            log_verbose("Setting RX filter coefficients\n");
+            for (size_t i = 0; i < len; i+=2) {
+                log_verbose("Setting RX filter coefficient %d\n", i);
+                // uint32_t value = ((uint16_t)coefficients[i] << 16) | ((uint16_t)coefficients[i+1]);
+                uint32_t value = ((uint16_t)coefficients[i+1] << 16) | ((uint16_t)coefficients[i]);
+
+                status = nios_8x32_write(dev, NIOS_PKT_8x32_TARGET_USR1, 1 + i, value);
+                if (status != 0) {
+                    break;
+                }
+            }
+            break;
+
+        default:
+            log_debug("Invalid module: %d\n", module);
+    }
+
+    return status;
+}
+
+int nios_rotator_set_frequency(struct bladerf *dev, bladerf_module module, int16_t frequency)
+{
+    int status = BLADERF_ERR_INVAL;
+    uint32_t value = 0;
+
+    switch (module) {
+        case BLADERF_MODULE_RX:
+            log_verbose("Setting RX rotator frequency: %d\n", (int)frequency);
+            status = nios_8x32_read(dev, NIOS_PKT_8x32_TARGET_USR1+1, 0, &value);
+
+            // Set the lower 16 bits to the 2s complement signed representation of the frequency
+            value &= ~((uint32_t)0xFFFF);
+            value |= (uint16_t)frequency;
+
+            status = nios_8x32_write(dev,  NIOS_PKT_8x32_TARGET_USR1+1, 0, value);
+            break;
+
+        default:
+            log_debug("Invalid module: %d\n", module);
+    }
+
+    if (status == 0) {
+        log_verbose("%s: Wrote %s %d\n",
+                    __FUNCTION__, module2str(module), value);
+    }
+
+    return status;
+}
+
+
+int nios_rotator_enable(struct bladerf *dev, bladerf_module module, bool enable)
+{
+    int status = BLADERF_ERR_INVAL;
+    uint32_t value = enable;
+
+    switch (module) {
+        case BLADERF_MODULE_RX:
+            log_verbose("Enable RX rotator: %s\n", value ? "true" : "false");
+            status = nios_8x32_read(dev, NIOS_PKT_8x32_TARGET_USR1+1, 0, &value);
+
+            value &= ~(uint32_t)(1 << 31);
+            if (enable) {
+                value |= (1 << 31);
+            }
+
+            status = nios_8x32_write(dev, NIOS_PKT_8x32_TARGET_USR1+1, 0, value);
+            break;
+
+        default:
+            log_debug("Invalid module: %d\n", module);
+    }
+
+    if (status == 0) {
+        log_verbose("%s: Wrote %s %d\n",
+                    __FUNCTION__, module2str(module), value);
+    }
+
+    return status;
+}
+
+int nios_decimator_set_factor(struct bladerf *dev, bladerf_module module, uint16_t factor, uint16_t left_shift)
+{
+    int status = BLADERF_ERR_INVAL;
+    uint32_t value = 0;
+
+    switch (module) {
+        case BLADERF_MODULE_RX:
+            log_verbose("Setting RX decimator factor: %d\n", (int)factor);
+            status = nios_8x32_read(dev, NIOS_PKT_8x32_TARGET_USR1+2, 0, &value);
+
+            // Set the lower 16 bits to the decimation factor
+            value &= ~((uint32_t)0xFFFF);
+            value |= (uint16_t)factor;
+            value |= (left_shift & 0xFF) << 16;
+
+            status = nios_8x32_write(dev,  NIOS_PKT_8x32_TARGET_USR1+2, 0, value);
+            break;
+
+        default:
+            log_debug("Invalid module: %d\n", module);
+    }
+
+    if (status == 0) {
+        log_verbose("%s: Wrote %s %d\n",
+                    __FUNCTION__, module2str(module), value);
+    }
+
+    return status;
+}
+
+int nios_decimator_enable(struct bladerf *dev, bladerf_module module, bool enable)
+{
+    int status = BLADERF_ERR_INVAL;
+    uint32_t value = 0;
+
+    switch (module) {
+        case BLADERF_MODULE_RX:
+            log_verbose("Enable RX decimator: %s\n", value ? "true" : "false");
+            status = nios_8x32_read(dev, NIOS_PKT_8x32_TARGET_USR1+2, 0, &value);
+
+            value &= ~(uint32_t)(1 << 31);
+            if (enable) {
+                value |= (1 << 31);
+            }
+
+            status = nios_8x32_write(dev, NIOS_PKT_8x32_TARGET_USR1+2, 0, value);
+            break;
+
+        default:
+            log_debug("Invalid module: %d\n", module);
+    }
+
+    if (status == 0) {
+        log_verbose("%s: Wrote %s %d\n",
+                    __FUNCTION__, module2str(module), value);
+    }
+
+    return status;
+}
+
+int nios_fft_set_interval(struct bladerf *dev, bladerf_module module, uint64_t interval)
+{
+    int status = BLADERF_ERR_INVAL;
+
+    switch (module) {
+        case BLADERF_MODULE_RX:
+            log_verbose("Setting RX FFT interval\n");
+            status = nios_8x32_write(dev, NIOS_PKT_8x32_TARGET_USR1+3, 1, (uint32_t)(interval & 0xFFFFFFFF));
+            if (status != 0) 
+                break;
+            status = nios_8x32_write(dev, NIOS_PKT_8x32_TARGET_USR1+3, 2, (uint32_t)(interval >> 32));
+            break;
+
+        default:
+            log_debug("Invalid module: %d\n", module);
+    }
+
+
+    return status;
+}
+
+int nios_fft_enable(struct bladerf *dev, bladerf_module module, bool enable)
+{
+    int status = BLADERF_ERR_INVAL;
+
+    switch (module) {
+        case BLADERF_MODULE_RX:
+            log_verbose("Setting RX FFT enable: %s\n", enable ? "true" : "false");
+            status = nios_8x32_write(dev, NIOS_PKT_8x32_TARGET_USR1+3, 0, (uint8_t)enable);
+            break;
+
+        default:
+            log_debug("Invalid module: %d\n", module);
+    }
+
+    if (status == 0) {
+        log_verbose("%s: Wrote %s %d\n",
+                    __FUNCTION__, module2str(module), (int)enable);
+    }
+
+    return status;    
+}
+
+int nios_mux_set_stream_mask(struct bladerf *dev, bladerf_module module, uint8_t mask)
+{
+    int status = BLADERF_ERR_INVAL;
+
+    switch (module) {
+        case BLADERF_MODULE_RX:
+            log_verbose("Set multiplexer stream mask: %d\n", (int)mask);
+
+            status = nios_8x8_write(dev, NIOS_PKT_8x32_TARGET_USR1, 0, mask);
+            break;
+
+        default:
+            log_debug("Invalid module: %d\n", module);
+    }
+
+    if (status == 0) {
+        log_verbose("%s: Wrote %s %d\n",
+                    __FUNCTION__, module2str(module), (int)mask);
+    }
+
+    return status;
+}

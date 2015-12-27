@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <arpa/inet.h>
 
 int main(int argc, char **argv) {
 	FILE *f = fopen(argv[1], "r");
@@ -23,6 +24,8 @@ int main(int argc, char **argv) {
 			int16_t re = samples[i], 
 					im = samples[i+1];
 
+			//re = ntohs(re);
+			//im = ntohs(im);
 
 			re = round((float)re/16.0f);
 			im = round((float)im/16.0f);

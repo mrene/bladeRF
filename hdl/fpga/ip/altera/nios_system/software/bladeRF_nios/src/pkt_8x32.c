@@ -45,6 +45,22 @@ static inline bool perform_read(uint8_t id, uint8_t addr, uint32_t *data)
             *data = 0x00;
             return false;
 
+        case NIOS_PKT_8x32_TARGET_USR1:
+            *data = IORD_32DIRECT(RX_DDC_FILTER_BASE, addr);
+            break;
+
+        case NIOS_PKT_8x32_TARGET_USR1+1:
+            *data = IORD_32DIRECT(RX_DDC_ROTATOR_BASE, addr);
+            break;
+
+        case NIOS_PKT_8x32_TARGET_USR1+2:
+            *data = IORD_32DIRECT(RX_DDC_DECIMATOR_BASE, addr);
+            break;
+
+        case NIOS_PKT_8x32_TARGET_USR1+3:
+            *data = IORD_32DIRECT(FFT_BASE, addr);
+            break;
+
         default:
             DBG("Invalid id: 0x%02x\n", id);
             *data = 0x00;
@@ -67,6 +83,22 @@ static inline bool perform_write(uint8_t id, uint8_t addr, uint32_t data)
 
         case NIOS_PKT_8x32_TARGET_ADF4351:
             adf4351_write(data);
+            break;
+
+        case NIOS_PKT_8x32_TARGET_USR1:
+            IOWR_32DIRECT(RX_DDC_FILTER_BASE, addr, data);
+            break;
+
+        case NIOS_PKT_8x32_TARGET_USR1+1:
+            IOWR_32DIRECT(RX_DDC_ROTATOR_BASE, addr, data);
+            break;
+
+        case NIOS_PKT_8x32_TARGET_USR1+2:
+            IOWR_32DIRECT(RX_DDC_DECIMATOR_BASE, addr, data);
+            break;
+
+        case NIOS_PKT_8x32_TARGET_USR1+3:
+            IOWR_32DIRECT(FFT_BASE, addr, data);
             break;
 
         default:

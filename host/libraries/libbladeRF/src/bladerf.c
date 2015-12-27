@@ -1758,3 +1758,103 @@ int bladerf_load_fw_from_bootloader(const char *device_identifier,
     fx3_fw_deinit(fw);
     return status;
 }
+
+int bladerf_filter_enable(struct bladerf *dev, bladerf_module module, bool enable)
+{
+    int status;
+    MUTEX_LOCK(&dev->ctrl_lock);
+
+    status = dev->fn->filter_enable(dev, module, enable);
+
+    MUTEX_UNLOCK(&dev->ctrl_lock);
+    return status;
+}
+
+int bladerf_filter_set_coefficients(struct bladerf *dev, bladerf_module module, int16_t *coefficients, size_t len)
+{
+    int status;
+    MUTEX_LOCK(&dev->ctrl_lock);
+
+    status = dev->fn->filter_set_coefficients(dev, module, coefficients, len);
+
+    MUTEX_UNLOCK(&dev->ctrl_lock);
+    return status;
+}
+
+int bladerf_rotator_set_frequency(struct bladerf *dev, bladerf_module module, int16_t frequency)
+{
+    int status;
+    MUTEX_LOCK(&dev->ctrl_lock);
+
+    status = dev->fn->rotator_set_frequency(dev, module, frequency);
+
+    MUTEX_UNLOCK(&dev->ctrl_lock);
+    return status;
+}
+
+int bladerf_rotator_enable(struct bladerf *dev, bladerf_module module, bool enable)
+{
+    int status;
+    MUTEX_LOCK(&dev->ctrl_lock);
+
+    status = dev->fn->rotator_enable(dev, module, enable);
+
+    MUTEX_UNLOCK(&dev->ctrl_lock);
+    return status;
+}
+
+int bladerf_decimator_set_factor(struct bladerf *dev, bladerf_module module, uint16_t factor, uint16_t left_shift)
+{
+    int status;
+    MUTEX_LOCK(&dev->ctrl_lock);
+
+    status = dev->fn->decimator_set_factor(dev, module, factor, left_shift);
+
+    MUTEX_UNLOCK(&dev->ctrl_lock);
+    return status;
+}
+
+int bladerf_decimator_enable(struct bladerf *dev, bladerf_module module, bool enable)
+{
+    int status;
+    MUTEX_LOCK(&dev->ctrl_lock);
+
+    status = dev->fn->decimator_enable(dev, module, enable);
+
+    MUTEX_UNLOCK(&dev->ctrl_lock);
+    return status;
+}
+
+int bladerf_fft_set_interval(struct bladerf *dev, bladerf_module module, uint64_t interval)
+{
+    int status;
+    MUTEX_LOCK(&dev->ctrl_lock);
+
+    status = dev->fn->fft_set_interval(dev, module, interval);
+
+    MUTEX_UNLOCK(&dev->ctrl_lock);
+    return status;
+}
+
+int bladerf_fft_enable(struct bladerf *dev, bladerf_module module, bool enable)
+{
+    int status;
+    MUTEX_LOCK(&dev->ctrl_lock);
+
+    status = dev->fn->fft_enable(dev, module, enable);
+
+    MUTEX_UNLOCK(&dev->ctrl_lock);
+    return status;
+}
+
+int bladerf_mux_set_stream_mask(struct bladerf *dev, bladerf_module module, uint8_t mask)
+{
+    int status;
+    MUTEX_LOCK(&dev->ctrl_lock);
+
+    status = dev->fn->mux_set_stream_mask(dev, module, mask);
+
+    MUTEX_UNLOCK(&dev->ctrl_lock);
+    return status;
+}
+

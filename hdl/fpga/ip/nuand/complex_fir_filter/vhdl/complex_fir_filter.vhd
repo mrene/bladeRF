@@ -12,7 +12,7 @@ entity complex_fir_filter is
         DATA_WIDTH : positive := 32;
 
 
-        NUM_TAPS : positive := 100 ;
+        NUM_TAPS : positive := 75 ;
 
         ACCUM_SCALE : positive := 32;
         OUTPUT_SHIFT : positive := 12

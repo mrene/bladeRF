@@ -24,11 +24,32 @@ entity decimator is
 		out_q : out signed(15 downto 0);
 		out_valid : out std_logic;
 
-		factor : in unsigned(15 downto 0)
+		factor : in unsigned(15 downto 0);
+		in_shift : in unsigned(4 downto 0)
 	);
 end entity;
 
 architecture rtl of decimator is
+
+	component lpm_divide
+	generic (
+		lpm_widthn		: natural;
+		lpm_widthd		: natural;
+		lpm_pipeline	: natural;
+		lpm_nrepresentation		: string;
+		lpm_drepresentation		: string
+	);
+	port (
+			clock   : in std_logic;
+			clken   : in std_logic;
+			aclr    : in std_logic;
+			denom	: in std_logic_vector (15 downto 0);
+			quotient: out std_logic_vector (31 downto 0);
+			remain	: out std_logic_vector (15 downto 0);
+			numer	: in std_logic_vector (31 downto 0)
+	);
+	end component;
+
 	signal accum_i, accum_q : signed(31 downto 0);
 	signal div_numer_i, div_quotient_i : std_logic_vector(31 downto 0);
 	signal div_numer_q, div_quotient_q : std_logic_vector(31 downto 0);
@@ -39,7 +60,7 @@ architecture rtl of decimator is
 begin
 
 	-- Manually instanciate lpm_divide to specify the LPM_PIPELINE parameter
-	U_divide_i : entity lpm.lpm_divide
+	U_divide_i : component lpm_divide
 		generic map (
 			LPM_WIDTHN   => 32, -- Width of numer and quotient
 			LPM_WIDTHD   => 16, -- Width of denom and remain
@@ -57,7 +78,7 @@ begin
 			remain   => div_remain_i
 		) ;
 
-	U_divide_q : entity lpm.lpm_divide
+	U_divide_q : component lpm_divide
 		generic map (
 			LPM_WIDTHN   => 32, -- Width of numer and quotient
 			LPM_WIDTHD   => 16, -- Width of denom and remain
@@ -116,8 +137,8 @@ begin
 					--out_i_d1 <= resize(accum_i / signed(factor), out_i_d1'length);
 					--out_q_d1 <= resize(accum_q / signed(factor), out_q_d1'length);
 
-					div_numer_i <= std_logic_vector(accum_i + in_i) ;
-					div_numer_q <= std_logic_vector(accum_q + in_q) ;
+					div_numer_i <= std_logic_vector(accum_i + shift_left(in_i, to_integer(in_shift))) ;
+					div_numer_q <= std_logic_vector(accum_q + shift_left(in_q, to_integer(in_shift))) ;
 
 					out_valid_d0 <= '1';
 
@@ -125,8 +146,8 @@ begin
 					accum_q <= (others => '0');
 					counter := (others => '0');
 				else
-					accum_i <= accum_i + in_i;
-					accum_q <= accum_i + in_q;
+					accum_i <= accum_i + shift_left(in_i, to_integer(in_shift));
+					accum_q <= accum_i + shift_left(in_q, to_integer(in_shift));
 				end if;
 			end if;
 		end if;

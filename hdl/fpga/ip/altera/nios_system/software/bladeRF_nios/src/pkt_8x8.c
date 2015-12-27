@@ -39,6 +39,11 @@ static inline bool perform_read(uint8_t id, uint8_t addr, uint8_t *data)
             *data = si5338_read(addr);
             break;
 
+        case NIOS_PKT_8x8_TARGET_USR1:
+            /* Target the multiplexer */
+            *data = IORD_8DIRECT(MULTIPLEXER_CONTROLLER_0_BASE, addr);
+            break;
+
         /* Add user customizations here
 
         case NIOS_PKT_8x8_TARGET_USR1:
@@ -65,6 +70,10 @@ static inline bool perform_write(uint8_t id, uint8_t addr, uint8_t data)
 
         case NIOS_PKT_8x8_TARGET_SI5338:
             si5338_write(addr, data);
+            break;
+
+        case NIOS_PKT_8x8_TARGET_USR1:
+            IOWR_8DIRECT(MULTIPLEXER_CONTROLLER_0_BASE, addr, data);
             break;
 
         /* Add user customizations here

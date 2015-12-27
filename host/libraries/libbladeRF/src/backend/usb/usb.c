@@ -1183,4 +1183,18 @@ const struct backend_fns backend_fns_usb = {
     FIELD_INIT(.retune, nios_retune),
 
     FIELD_INIT(.load_fw_from_bootloader, usb_load_fw_from_bootloader),
+
+    FIELD_INIT(.filter_enable, nios_filter_enable),
+    FIELD_INIT(.filter_set_coefficients, nios_filter_set_coefficients),
+
+    FIELD_INIT(.rotator_set_frequency, nios_rotator_set_frequency),
+    FIELD_INIT(.rotator_enable, nios_rotator_enable),
+
+    FIELD_INIT(.decimator_set_factor, nios_decimator_set_factor),
+    FIELD_INIT(.decimator_enable, nios_decimator_enable),
+
+    FIELD_INIT(.fft_set_interval, nios_fft_set_interval),
+    FIELD_INIT(.fft_enable, nios_fft_enable),
+
+    FIELD_INIT(.mux_set_stream_mask, nios_mux_set_stream_mask)
 };

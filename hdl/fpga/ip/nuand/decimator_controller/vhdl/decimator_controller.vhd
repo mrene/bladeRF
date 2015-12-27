@@ -43,10 +43,12 @@ architecture rtl of decimator_controller is
     signal ctrl_reg : std_logic_vector(31 downto 0);
     signal enabled  : std_logic;
     signal factor   : unsigned(15 downto 0);
+    signal in_shift : unsigned(4 downto 0);
 begin
 
-    enabled <= ctrl_reg(31);
-    factor  <= unsigned(ctrl_reg(15 downto 0));
+    enabled  <= ctrl_reg(31);
+    in_shift <= unsigned(ctrl_reg(20 downto 16));
+    factor   <= unsigned(ctrl_reg(15 downto 0));
 
 	aso_out_data  <= std_logic_vector(out_i & out_q) when enabled = '1' else asi_in_data;
 	aso_out_valid <= out_valid when enabled = '1' else asi_in_valid;
@@ -63,6 +65,7 @@ begin
             in_i     => in_i,
             in_q     => in_q,
             in_valid => in_valid,
+            in_shift => in_shift,
 
             out_i     => out_i,
             out_q     => out_q,

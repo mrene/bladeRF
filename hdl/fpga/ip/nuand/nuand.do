@@ -40,5 +40,6 @@ proc compile_nuand { root } {
     vcom -work nuand -2008 [file join $root ./synthesis/signal_generator.vhd]
     vcom -work nuand -2008 [file join $root ./synthesis/multiplexer.vhd]
     vcom -work nuand -2008 [file join $root ./synthesis/tb/multiplexer_tb.vhd]
+    vcom -work nuand -2008 [file join $root ./synthesis/tb/nco_tb.vhd]
 }
 

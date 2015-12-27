@@ -265,4 +265,16 @@ int nios_expansion_gpio_dir_write(struct bladerf *dev, uint32_t val);
 int nios_retune(struct bladerf *dev, bladerf_module module, uint64_t timestamp,
                 uint16_t nint, uint32_t nfrac, uint8_t freqsel, uint8_t vcocap,
                 bool low_band, bool quick_tune);
+
+
+int nios_filter_enable(struct bladerf *dev, bladerf_module m, bool enable);
+int nios_filter_set_coefficients(struct bladerf *dev, bladerf_module m, int16_t *coefficients, size_t len);
+int nios_rotator_set_frequency(struct bladerf *dev, bladerf_module m, int16_t frequency);
+int nios_rotator_enable(struct bladerf *dev, bladerf_module m, bool enable);
+int nios_decimator_set_factor(struct bladerf *dev, bladerf_module m, uint16_t frequency, uint16_t left_shift);
+int nios_decimator_enable(struct bladerf *dev, bladerf_module m, bool enable);
+int nios_fft_set_interval(struct bladerf *dev, bladerf_module m, uint64_t interval);
+int nios_fft_enable(struct bladerf *dev, bladerf_module m, bool enable);
+int nios_mux_set_stream_mask(struct bladerf *dev, bladerf_module m, uint8_t mask);
+
 #endif

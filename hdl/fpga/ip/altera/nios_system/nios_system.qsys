@@ -57,6 +57,14 @@
          type = "int";
       }
    }
+   element fft.config
+   {
+      datum baseAddress
+      {
+         value = "37888";
+         type = "String";
+      }
+   }
    element iq_corr_rx_phase_gain
    {
       datum _sortIndex
@@ -113,6 +121,22 @@
          type = "int";
       }
    }
+   element multiplexer_controller_0
+   {
+      datum _sortIndex
+      {
+         value = "16";
+         type = "int";
+      }
+   }
+   element multiplexer_controller_0.config
+   {
+      datum baseAddress
+      {
+         value = "38912";
+         type = "String";
+      }
+   }
    element nios2
    {
       datum _sortIndex
@@ -126,6 +150,38 @@
       datum baseAddress
       {
          value = "34816";
+         type = "String";
+      }
+   }
+   element nios_system
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone IV E";
+         type = "String";
+      }
+   }
+   element nios_system
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone IV E";
+         type = "String";
+      }
+   }
+   element nios_system
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone IV E";
+         type = "String";
+      }
+   }
+   element nios_system
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone IV E";
          type = "String";
       }
    }
@@ -198,6 +254,54 @@
       datum baseAddress
       {
          value = "16384";
+         type = "String";
+      }
+   }
+   element rx_ddc_decimator
+   {
+      datum _sortIndex
+      {
+         value = "19";
+         type = "int";
+      }
+   }
+   element rx_ddc_decimator.config
+   {
+      datum baseAddress
+      {
+         value = "41984";
+         type = "String";
+      }
+   }
+   element rx_ddc_filter
+   {
+      datum _sortIndex
+      {
+         value = "17";
+         type = "int";
+      }
+   }
+   element rx_ddc_filter.config
+   {
+      datum baseAddress
+      {
+         value = "39936";
+         type = "String";
+      }
+   }
+   element rx_ddc_rotator
+   {
+      datum _sortIndex
+      {
+         value = "18";
+         type = "int";
+      }
+   }
+   element rx_ddc_rotator.config
+   {
+      datum baseAddress
+      {
+         value = "40960";
          type = "String";
       }
    }
@@ -311,8 +415,6 @@
    internal="peripheral_spi.external"
    type="conduit"
    dir="end" />
- <interface name="fft_in" internal="fft.in" type="avalon_streaming" dir="end" />
- <interface name="fft_out" internal="fft.out" type="avalon_streaming" dir="start" />
  <interface
    name="gpio"
    internal="control.external_connection"
@@ -328,6 +430,22 @@
    internal="system_clock.clk_in_reset"
    type="reset"
    dir="end" />
+ <interface
+   name="rx_ddc_in"
+   internal="rx_ddc_filter.in"
+   type="avalon_streaming"
+   dir="end" />
+ <interface name="rx_fft_in" internal="fft.in" type="avalon_streaming" dir="end" />
+ <interface
+   name="rx_mux_in"
+   internal="multiplexer_controller_0.in0"
+   type="avalon_streaming"
+   dir="end" />
+ <interface
+   name="rx_mux_out"
+   internal="multiplexer_controller_0.out"
+   type="avalon_streaming"
+   dir="start" />
  <interface
    name="rx_tamer"
    internal="rx_tamer.conduit_end"
@@ -428,6 +546,14 @@
   <parameter name="CLOCK_DIV" value="4" />
   <parameter name="DATA_WIDTH" value="8" />
  </module>
+ <module
+   name="multiplexer_controller_0"
+   kind="multiplexer_controller"
+   version="1.0"
+   enabled="1">
+  <parameter name="ADDR_WIDTH" value="8" />
+  <parameter name="DATA_WIDTH" value="8" />
+ </module>
  <module name="nios2" kind="altera_nios2_gen2" version="15.0" enabled="1">
   <parameter name="AUTO_CLK_CLOCK_DOMAIN" value="1" />
   <parameter name="AUTO_CLK_RESET_DOMAIN" value="1" />
@@ -448,7 +574,7 @@
   <parameter name="dataAddrWidth" value="16" />
   <parameter name="dataMasterHighPerformanceAddrWidth" value="1" />
   <parameter name="dataMasterHighPerformanceMapParam" value="" />
-  <parameter name="dataSlaveMapParam"><![CDATA[<address-map><slave name='fft.config' start='0x0' end='0x400' /><slave name='ram.s1' start='0x4000' end='0x8000' /><slave name='nios2.debug_mem_slave' start='0x8800' end='0x9000' /><slave name='control.s1' start='0x9040' end='0x9060' /><slave name='peripheral_spi.spi_control_port' start='0x9060' end='0x9080' /><slave name='xb_gpio_dir.s1' start='0x90A0' end='0x90B0' /><slave name='xb_gpio.s1' start='0x90B0' end='0x90C0' /><slave name='iq_corr_tx_phase_gain.s1' start='0x90C0' end='0x90D0' /><slave name='iq_corr_rx_phase_gain.s1' start='0x90D0' end='0x90E0' /><slave name='opencores_i2c.bladerf_oc_i2c_master' start='0x90F0' end='0x90F8' /><slave name='jtag_uart.avalon_jtag_slave' start='0x9100' end='0x9108' /><slave name='command_uart.avalon_slave' start='0x9120' end='0x9140' /><slave name='tx_tamer.avalon_slave_0' start='0x9140' end='0x9160' /><slave name='rx_tamer.avalon_slave_0' start='0x9160' end='0x9180' /><slave name='lms_spi.avalon_slave_0' start='0x9200' end='0x9280' /></address-map>]]></parameter>
+  <parameter name="dataSlaveMapParam"><![CDATA[<address-map><slave name='ram.s1' start='0x4000' end='0x8000' /><slave name='nios2.debug_mem_slave' start='0x8800' end='0x9000' /><slave name='control.s1' start='0x9040' end='0x9060' /><slave name='peripheral_spi.spi_control_port' start='0x9060' end='0x9080' /><slave name='xb_gpio_dir.s1' start='0x90A0' end='0x90B0' /><slave name='xb_gpio.s1' start='0x90B0' end='0x90C0' /><slave name='iq_corr_tx_phase_gain.s1' start='0x90C0' end='0x90D0' /><slave name='iq_corr_rx_phase_gain.s1' start='0x90D0' end='0x90E0' /><slave name='opencores_i2c.bladerf_oc_i2c_master' start='0x90F0' end='0x90F8' /><slave name='jtag_uart.avalon_jtag_slave' start='0x9100' end='0x9108' /><slave name='command_uart.avalon_slave' start='0x9120' end='0x9140' /><slave name='tx_tamer.avalon_slave_0' start='0x9140' end='0x9160' /><slave name='rx_tamer.avalon_slave_0' start='0x9160' end='0x9180' /><slave name='lms_spi.avalon_slave_0' start='0x9200' end='0x9280' /><slave name='fft.config' start='0x9400' end='0x9800' /><slave name='multiplexer_controller_0.config' start='0x9800' end='0x9900' /><slave name='rx_ddc_filter.config' start='0x9C00' end='0xA000' /><slave name='rx_ddc_rotator.config' start='0xA000' end='0xA400' /><slave name='rx_ddc_decimator.config' start='0xA400' end='0xA800' /></address-map>]]></parameter>
   <parameter name="data_master_high_performance_paddr_base" value="0" />
   <parameter name="data_master_high_performance_paddr_size" value="0" />
   <parameter name="data_master_paddr_base" value="0" />
@@ -660,6 +786,25 @@
   <parameter name="useShallowMemBlocks" value="false" />
   <parameter name="writable" value="true" />
  </module>
+ <module name="rx_ddc_decimator" kind="decimator" version="1.0" enabled="1">
+  <parameter name="ADDR_WIDTH" value="8" />
+  <parameter name="DATA_WIDTH" value="32" />
+ </module>
+ <module name="rx_ddc_filter" kind="complex_fir" version="1.0" enabled="1">
+  <parameter name="ACCUM_SCALE" value="32" />
+  <parameter name="ADDR_WIDTH" value="8" />
+  <parameter name="DATA_WIDTH" value="32" />
+  <parameter name="INPUT_WIDTH" value="16" />
+  <parameter name="NUM_TAPS" value="60" />
+  <parameter name="OUTPUT_SHIFT" value="12" />
+  <parameter name="OUTPUT_WIDTH" value="16" />
+ </module>
+ <module name="rx_ddc_rotator" kind="rotator" version="1.0" enabled="1">
+  <parameter name="ADDR_WIDTH" value="8" />
+  <parameter name="DATA_SCALE" value="32" />
+  <parameter name="DATA_WIDTH" value="32" />
+  <parameter name="OUTPUT_SHIFT" value="12" />
+ </module>
  <module name="rx_tamer" kind="time_tamer" version="1.0" enabled="1" />
  <module name="system_clock" kind="clock_source" version="15.0" enabled="1">
   <parameter name="clockFrequency" value="80000000" />
@@ -760,7 +905,43 @@
    start="nios2.data_master"
    end="fft.config">
   <parameter name="arbitrationPriority" value="1" />
-  <parameter name="baseAddress" value="0x0000" />
+  <parameter name="baseAddress" value="0x9400" />
+  <parameter name="defaultConnection" value="false" />
+ </connection>
+ <connection
+   kind="avalon"
+   version="15.0"
+   start="nios2.data_master"
+   end="multiplexer_controller_0.config">
+  <parameter name="arbitrationPriority" value="1" />
+  <parameter name="baseAddress" value="0x9800" />
+  <parameter name="defaultConnection" value="false" />
+ </connection>
+ <connection
+   kind="avalon"
+   version="15.0"
+   start="nios2.data_master"
+   end="rx_ddc_filter.config">
+  <parameter name="arbitrationPriority" value="1" />
+  <parameter name="baseAddress" value="0x9c00" />
+  <parameter name="defaultConnection" value="false" />
+ </connection>
+ <connection
+   kind="avalon"
+   version="15.0"
+   start="nios2.data_master"
+   end="rx_ddc_rotator.config">
+  <parameter name="arbitrationPriority" value="1" />
+  <parameter name="baseAddress" value="0xa000" />
+  <parameter name="defaultConnection" value="false" />
+ </connection>
+ <connection
+   kind="avalon"
+   version="15.0"
+   start="nios2.data_master"
+   end="rx_ddc_decimator.config">
+  <parameter name="arbitrationPriority" value="1" />
+  <parameter name="baseAddress" value="0xa400" />
   <parameter name="defaultConnection" value="false" />
  </connection>
  <connection
@@ -849,6 +1030,26 @@
   <parameter name="baseAddress" value="0x4000" />
   <parameter name="defaultConnection" value="false" />
  </connection>
+ <connection
+   kind="avalon_streaming"
+   version="15.0"
+   start="rx_ddc_filter.out"
+   end="rx_ddc_rotator.in" />
+ <connection
+   kind="avalon_streaming"
+   version="15.0"
+   start="rx_ddc_rotator.out"
+   end="rx_ddc_decimator.in" />
+ <connection
+   kind="avalon_streaming"
+   version="15.0"
+   start="fft.out"
+   end="multiplexer_controller_0.in1" />
+ <connection
+   kind="avalon_streaming"
+   version="15.0"
+   start="rx_ddc_decimator.out"
+   end="multiplexer_controller_0.in2" />
  <connection kind="clock" version="15.0" start="system_clock.clk" end="nios2.clk" />
  <connection
    kind="clock"
@@ -892,6 +1093,26 @@
    start="system_clock.clk"
    end="command_uart.clock" />
  <connection kind="clock" version="15.0" start="system_clock.clk" end="fft.clock" />
+ <connection
+   kind="clock"
+   version="15.0"
+   start="system_clock.clk"
+   end="multiplexer_controller_0.clock" />
+ <connection
+   kind="clock"
+   version="15.0"
+   start="system_clock.clk"
+   end="rx_ddc_filter.clock" />
+ <connection
+   kind="clock"
+   version="15.0"
+   start="system_clock.clk"
+   end="rx_ddc_rotator.clock" />
+ <connection
+   kind="clock"
+   version="15.0"
+   start="system_clock.clk"
+   end="rx_ddc_decimator.clock" />
  <connection
    kind="clock"
    version="15.0"
@@ -1010,6 +1231,26 @@
    version="15.0"
    start="system_clock.clk_reset"
    end="fft.reset" />
+ <connection
+   kind="reset"
+   version="15.0"
+   start="system_clock.clk_reset"
+   end="multiplexer_controller_0.reset" />
+ <connection
+   kind="reset"
+   version="15.0"
+   start="system_clock.clk_reset"
+   end="rx_ddc_decimator.reset" />
+ <connection
+   kind="reset"
+   version="15.0"
+   start="system_clock.clk_reset"
+   end="rx_ddc_rotator.reset" />
+ <connection
+   kind="reset"
+   version="15.0"
+   start="system_clock.clk_reset"
+   end="rx_ddc_filter.reset" />
  <connection
    kind="reset"
    version="15.0"

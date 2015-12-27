@@ -56,8 +56,22 @@ begin
         outputs => outputs
       ) ;
 
+
+    U_file_writer : entity work.data_writer
+        generic map(
+            FILENAME => "nco_output.dat",
+            DATA_WIDTH => 32
+        )
+        port map(
+            reset => reset,
+            clock => clock,
+
+            data       => std_logic_vector(outputs.re & outputs.im),
+            data_valid => outputs.valid
+        );
+
+
     tb : process
-        variable up_downx : boolean := true ;
     begin
         reset <= '1' ;
         nop( clock, 10 ) ;
@@ -65,26 +79,10 @@ begin
         reset <= '0' ;
         nop( clock, 10 ) ;
 
-        for i in 0 to 100000 loop
-            if( inputs.dphase = 4096 ) then
-                up_downx := false ;
-            elsif( inputs.dphase = -4096 ) then
-                up_downx := true ;
-            end if ;
+        inputs.dphase <= to_signed(256, inputs.dphase'length);
+        inputs.valid <= '1' ;
 
-            if( up_downx ) then
-                inputs.dphase <= inputs.dphase + 1 ;
-            else
-                inputs.dphase <= inputs.dphase - 1 ;
-            end if ;
-
-            inputs.valid <= '1' ;
-            wait until rising_edge( clock ) ;
-            inputs.valid <= '0' ;
-
-            nop( clock, 10 ) ;
-
-        end loop ;
+        nop ( clock, 1000000 );
 
         report "-- End of Simulation --" severity failure ;
     end process ;

@@ -164,6 +164,21 @@ struct backend_fns {
     int (*load_fw_from_bootloader)(bladerf_backend backend,
                                    uint8_t bus, uint8_t addr,
                                    struct fx3_firmware *fw);
+
+
+    int (*filter_enable)(struct bladerf *dev, bladerf_module m, bool enable);
+    int (*filter_set_coefficients)(struct bladerf *dev, bladerf_module m, int16_t *coefficients, size_t len);
+
+    int (*rotator_set_frequency)(struct bladerf *dev, bladerf_module m, int16_t frequency);
+    int (*rotator_enable)(struct bladerf *dev, bladerf_module m, bool enable);
+
+    int (*decimator_set_factor)(struct bladerf *dev, bladerf_module m, uint16_t factor, uint16_t left_shift);
+    int (*decimator_enable)(struct bladerf *dev, bladerf_module m, bool enable);
+
+    int (*fft_set_interval)(struct bladerf *dev, bladerf_module m, uint64_t interval);
+    int (*fft_enable)(struct bladerf *dev, bladerf_module m, bool enable);
+
+    int (*mux_set_stream_mask)(struct bladerf *dev, bladerf_module m, uint8_t mask);
 };
 
 /**

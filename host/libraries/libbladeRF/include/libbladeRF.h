@@ -3076,6 +3076,36 @@ int CALL_CONV bladerf_load_fw_from_bootloader(const char *device_identifier,
 
 /** @} (End of FN_BOOTLOADER) */
 
+
+API_EXPORT
+int CALL_CONV bladerf_filter_enable(struct bladerf *dev, bladerf_module m, bool enable);
+
+API_EXPORT
+int CALL_CONV bladerf_filter_set_coefficients(struct bladerf *dev, bladerf_module m, int16_t *coefficients, size_t len);
+
+API_EXPORT
+int CALL_CONV bladerf_rotator_set_frequency(struct bladerf *dev, bladerf_module m, int16_t frequency);
+
+API_EXPORT
+int CALL_CONV bladerf_rotator_enable(struct bladerf *dev, bladerf_module m, bool enable);
+
+API_EXPORT
+int CALL_CONV bladerf_decimator_set_factor(struct bladerf *dev, bladerf_module m, uint16_t frequency, uint16_t left_shift);
+
+API_EXPORT
+int CALL_CONV bladerf_decimator_enable(struct bladerf *dev, bladerf_module m, bool enable);
+
+API_EXPORT
+int CALL_CONV bladerf_fft_set_interval(struct bladerf *dev, bladerf_module m, uint64_t interval);
+
+API_EXPORT
+int CALL_CONV bladerf_fft_enable(struct bladerf *dev, bladerf_module m, bool enable);
+
+API_EXPORT
+int CALL_CONV bladerf_mux_set_stream_mask(struct bladerf *dev, bladerf_module m, uint8_t mask);
+
+
+
 #ifdef __cplusplus
 }
 #endif
