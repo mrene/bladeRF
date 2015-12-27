@@ -26,7 +26,7 @@ entity processing_bridge is
 	);
 end entity;
 
-architecture rtl of process_bridge is
+architecture rtl of processing_bridge is
 begin
 	wdata <= std_logic_vector(in_i & in_q);
 	wreq <= in_valid;

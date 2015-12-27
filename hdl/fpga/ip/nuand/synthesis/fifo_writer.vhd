@@ -12,15 +12,15 @@ entity fifo_writer is
     meta_en             :   in      std_logic ;
     timestamp           :   in      unsigned(63 downto 0);
 
-    in_i                :   in      signed(31 downto 0) ;
-    in_q                :   in      signed(31 downto 0) ;
+    in_i                :   in      signed(15 downto 0) ;
+    in_q                :   in      signed(15 downto 0) ;
     in_valid            :   in      std_logic ;
 
     fifo_usedw          :   in      std_logic_vector(11 downto 0) ;
     fifo_clear          :   buffer  std_logic ;
     fifo_write          :   buffer  std_logic ;
     fifo_full           :   in      std_logic ;
-    fifo_data           :   out     std_logic_vector(63 downto 0) ;
+    fifo_data           :   out     std_logic_vector(31 downto 0) ;
 
     meta_fifo_full      :   in     std_logic;
     meta_fifo_usedw     :   in     std_logic_vector(4 downto 0);
