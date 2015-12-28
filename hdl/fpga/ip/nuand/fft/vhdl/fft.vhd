@@ -57,7 +57,7 @@ architecture rtl of fft is
     -- Address 0x1 and 0x2
     -- Coundown setting
     -- Specifies how many samples the component should wait before taking an FFT
-    -- If 0, the component runs continuously and deliveres a complete N-point FFT every N/2 points,
+    -- If 0, the component runs continuously and delivers a complete N-point FFT every N/2 points,
     signal ctrl_countdown_setting : unsigned(63 downto 0) := to_unsigned(0, 64);
     -- End memory-mapped area
 

@@ -131,3 +131,11 @@ def packetfile(filename, stream_id):
 				q = struct.unpack('<h', packet['data'][j+2:j+4])[0]
 				yield complex(i,q)
 
+def plot_fft(data, samp_rate, center = 0):
+    fftdata = np.fft.fft(data)
+    freq = np.fft.fftfreq(len(data), 1./samp_rate)
+    freq = np.add(freq, center)
+    mag = [10 * np.log10(np.abs(x)) for x in fftdata]
+    plt.figure(figsize=(13, 5))
+    plt.ticklabel_format(useOffset=False,style='plain')
+    plt.plot(freq, mag)
