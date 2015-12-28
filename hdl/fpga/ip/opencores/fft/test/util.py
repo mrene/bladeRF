@@ -4,7 +4,9 @@ from scipy import signal
 from scipy.fftpack import fft 
 import numpy
 import struct
+import numpy as numpy
 from pprint import pprint
+import matplotlib.pyplot as plt
 
 ## Data sources
 
