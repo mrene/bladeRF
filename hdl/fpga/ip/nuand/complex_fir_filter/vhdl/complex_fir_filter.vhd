@@ -49,9 +49,6 @@ architecture systolic of complex_fir_filter is
     signal in_i, in_q : signed(INPUT_WIDTH-1 downto 0);
     signal in_valid : std_logic;
 
-    signal in_i_delay, in_q_delay : signed(INPUT_WIDTH-1 downto 0);
-    signal in_valid_delay : std_logic;
-
     signal out_i, out_q : signed(OUTPUT_WIDTH-1 downto 0);
     signal out_valid : std_logic;
 
@@ -120,30 +117,23 @@ begin
         elsif rising_edge(clock) then
             --
             out_valid <= '0';
-
-            in_valid_delay <= in_valid;
-            in_i_delay <= in_i;
-            in_q_delay <= in_q;
-
             if in_valid = '1' then
-                for i in 0 to accum_i'high/2-1 loop
-                    accum_i(i) <= accum_i(i+1) + (in_i * coeff_i(i) - in_q * coeff_q(i));
-                    accum_q(i) <= accum_q(i+1) + (in_q * coeff_i(i) + in_i * coeff_q(i));
+
+                for i in accum_i'range loop
+                    if i = accum_i'high then
+                        --accum(i) <= coeff(i)*in_sample;
+                        accum_i(i) <= in_i * coeff_i(i) - in_q * coeff_q(i);
+                        accum_q(i) <= in_q * coeff_i(i) + in_i * coeff_q(i);
+                    else
+                        --accum(i) <= accum(i+1) + coeff(i)*in_sample;
+                        accum_i(i) <= accum_i(i+1) + (in_i * coeff_i(i) - in_q * coeff_q(i));
+                        accum_q(i) <= accum_q(i+1) + (in_q * coeff_i(i) + in_i * coeff_q(i));
+                    end if;
                 end loop;
 
                 out_valid <= '1';
                 out_i <= resize(shift_right(accum_i(0),OUTPUT_SHIFT),out_i'length);
                 out_q <= resize(shift_right(accum_q(0),OUTPUT_SHIFT),out_q'length);
-            elsif in_valid_delay = '1' then
-                for i in accum_i'high/2 to accum_i'high loop
-                    if i = accum_i'high then
-                        accum_i(i) <= in_i * coeff_i(i) - in_q * coeff_q(i);
-                        accum_q(i) <= in_q * coeff_i(i) + in_i * coeff_q(i);
-                    else
-                        accum_i(i) <= accum_i(i+1) + (in_i * coeff_i(i) - in_q * coeff_q(i));
-                        accum_q(i) <= accum_q(i+1) + (in_q * coeff_i(i) + in_i * coeff_q(i));
-                    end if;
-                end loop;
             end if;
         end if;
     end process;
