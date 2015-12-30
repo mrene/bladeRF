@@ -76,8 +76,8 @@ begin
     in_q <= signed(asi_in_data(15 downto 0));
     in_valid <= asi_in_valid;
 
-    in_i_fixed <= in_i when in_valid else in_i_d;
-    in_q_fixed <= in_q when in_valid else in_q_d;
+    in_i_fixed <= in_i when in_valid = '1' else in_i_d;
+    in_q_fixed <= in_q when in_valid = '1' else in_q_d;
 
     aso_out_data <= std_logic_vector(out_i) & std_logic_vector(out_q) when enabled = '1' else asi_in_data;
     aso_out_valid <= out_valid when enabled = '1' else asi_in_valid;
