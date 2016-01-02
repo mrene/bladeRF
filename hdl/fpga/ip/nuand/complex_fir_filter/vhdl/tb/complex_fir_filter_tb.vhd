@@ -2,8 +2,8 @@ library ieee ;
     use ieee.std_logic_1164.all ;
     use ieee.numeric_std.all ;
 
-library nuand;
-    use nuand.util.all;
+library work;
+    use work.util.all;
 
 entity complex_fir_filter_tb is
 end entity ;
@@ -73,55 +73,55 @@ architecture arch of complex_fir_filter_tb is
 
     type coeff_array_t is array(natural range <>) of std_logic_vector(31 downto 0);
     constant coeff : coeff_array_t := (
-        x"00140000",
-        x"000b0022",
-        x"ffde0019",
-        x"ffe5ffed",
+        x"ffea0000",
+        x"0005ffef",
+        x"000c0008",
+        x"fff90005",
         x"00000000",
-        x"ffc80000",
-        x"ffdcff90",
-        x"007affa8",
-        x"005f0045",
+        x"fff00000",
+        x"000cffd9",
+        x"003f002e",
+        x"ff98004b",
+        x"ffc4ff47",
+        x"01130000",
+        x"ff8d0162",
+        x"fe78fee3",
+        x"01eefe99",
+        x"00e702c7",
+        x"fc850000",
+        x"0140fc25",
+        x"03be02b8",
+        x"fbd2030a",
+        x"fe40fa9c",
+        x"061c0000",
+        x"fe010627",
+        x"fa8dfc0a",
+        x"0596fbf1",
+        x"0226069e",
+        x"f9190000",
+        x"0215f998",
+        x"053c03cd",
+        x"fb0f0397",
+        x"fe40fa9c",
+        x"052b0000",
+        x"fe930466",
+        x"fcb8fd9e",
+        x"02d1fdf4",
+        x"00e702c7",
+        x"fd9d0000",
+        x"0096fe33",
+        x"012d00db",
+        x"ff2100a2",
+        x"ffc4ff47",
+        x"00810000",
+        x"ffe8004a",
+        x"ffdfffe8",
+        x"000dfff7",
         x"00000000",
-        x"00b70000",
-        x"0070015b",
-        x"fe980105",
-        x"fef3ff3c",
-        x"00000000",
-        x"fe1a0000",
-        x"fedafc77",
-        x"03a9fd57",
-        x"02c90206",
-        x"00000000",
-        x"059a0000",
-        x"03d70bd2",
-        x"f09d0b2e",
-        x"ecc1f204",
-        x"07e4e7b8",
-        x"17cb0000",
-        x"05e01217",
-        x"f5f2074e",
-        x"fb78fcb5",
-        x"00000000",
-        x"fc8f0000",
-        x"fe9afbb2",
-        x"0302fdd1",
-        x"0189011d",
-        x"00000000",
-        x"014d0000",
-        x"008901a7",
-        x"fed900d6",
-        x"ff6cff94",
-        x"00000000",
-        x"ff8a0000",
-        x"ffd2ff71",
-        x"005fffbb",
-        x"002d0021",
-        x"00000000",
-        x"00210000",
-        x"000d0028",
-        x"ffe30015",
-        x"fff0fff5"
+        x"00090000",
+        x"fffc000e",
+        x"fff1fff5",
+        x"0011fff3"
     );
 begin
     clock <= not clock after 1 ns ;
@@ -154,7 +154,10 @@ begin
     	);
 
 
-    U_complex_fir_filter : entity work.complex_fir_filter(systolic)
+    U_complex_fir_filter : entity work.complex_fir_filter
+        generic map(
+            NUM_TAPS => 60
+        )
         port map(
             clock => clock,
             reset => reset,

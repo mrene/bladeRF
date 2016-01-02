@@ -56,10 +56,11 @@ architecture systolic of complex_fir_filter is
 
     -- Delayed inputs
     signal in_i_d, in_q_d : signed(INPUT_WIDTH-1 downto 0);
-    signal in_valid_d, in_valid_d2 : std_logic;
+    signal in_valid_d, in_valid_d2, in_valid_d3, in_valid_d4 : std_logic;
 
     -- Fixed inputs (same as in_n or in_n_d if in_valid is 0)
     signal in_i_fixed, in_q_fixed : signed(INPUT_WIDTH-1 downto 0);
+    signal in_valid_fixed : std_logic;
 
     signal out_i, out_q : signed(OUTPUT_WIDTH-1 downto 0);
     signal out_valid : std_logic;
@@ -68,6 +69,7 @@ architecture systolic of complex_fir_filter is
     signal mult_datab_real, mult_datab_imag   : coeff_t(NUM_TAPS/2-1 downto 0);
     signal mult_add_real, mult_add_imag       : accum_t(NUM_TAPS/2-1 downto 0);
     signal mult_result_real, mult_result_imag : accum_t(NUM_TAPS/2-1 downto 0);
+    signal mult_result_valid : std_logic_vector(NUM_TAPS/2-1 downto 0);
 
     signal enabled : std_logic;
 begin
@@ -78,6 +80,7 @@ begin
 
     in_i_fixed <= in_i when in_valid = '1' else in_i_d;
     in_q_fixed <= in_q when in_valid = '1' else in_q_d;
+    in_valid_fixed <= in_valid when in_valid = '1' else in_valid_d;
 
     aso_out_data <= std_logic_vector(out_i) & std_logic_vector(out_q) when enabled = '1' else asi_in_data;
     aso_out_valid <= out_valid when enabled = '1' else asi_in_valid;
@@ -90,7 +93,7 @@ begin
                 addr := to_integer(unsigned(avs_config_address));
                 case addr is
                     when 0 => 
-                        avs_config_readdata(7 downto 1) <= (others => '0');
+                        avs_config_readdata(31 downto 1) <= (others => '0');
                         avs_config_readdata(0) <= enabled;
                     when others => 
                         if addr < NUM_TAPS then
@@ -127,48 +130,70 @@ begin
     -- Generate systolic multiplier-accumulator chain
     -- Multipliers are scaled down by 2, limiting the throughput to half the clock rate
     altmac : for i in 0 to NUM_TAPS/2-1 generate
-        U_complex_mult_add : entity work.complex_mult_add
-            port map(
-                clock   => clock,
+        g1 : if i /= NUM_TAPS/2-1 generate
+            U_complex_mult_add : entity work.complex_mult_add
+                port map(
+                    clock   => clock,
+                    reset   => reset or not enabled,
 
-                dataa_real => in_i_fixed,
-                dataa_imag => in_q_fixed,
+                    sel => not in_valid,
 
-                datab_real => mult_datab_real(i),
-                datab_imag => mult_datab_imag(i),
+                    sample_valid => in_valid_fixed,
+                    sample_real => in_i_fixed,
+                    sample_imag => in_q_fixed,
 
-                add_real => mult_add_real(i),
-                add_imag => mult_add_imag(i),
+                    coeff_a_real => coeff_i(i),
+                    coeff_a_imag => coeff_q(i),
 
-                result_real => mult_result_real(i),
-                result_imag => mult_result_imag(i)
-            );
+                    coeff_b_real => coeff_i(NUM_TAPS/2 + i),
+                    coeff_b_imag => coeff_q(NUM_TAPS/2 + i),
 
+                    add_a_real => accum_i(i+1),
+                    add_a_imag => accum_q(i+1),
 
-            mult_datab_real(i) <= coeff_i(i) when in_valid = '1' else coeff_i(NUM_TAPS/2 + i);
-            mult_datab_imag(i) <= coeff_q(i) when in_valid = '1' else coeff_q(NUM_TAPS/2 + i);
+                    add_b_real => accum_i(NUM_TAPS/2 + i + 1),
+                    add_b_imag => accum_q(NUM_TAPS/2 + i + 1),
 
-            g1 : if i /= NUM_TAPS/2-1 generate
-                mult_add_real(i) <= accum_i(i+1) when in_valid = '1' else accum_i(NUM_TAPS/2 + i + 1);
-                mult_add_imag(i) <= accum_q(i+1) when in_valid = '1' else accum_q(NUM_TAPS/2 + i + 1);
+                    result_a_real => accum_i(i),
+                    result_a_imag => accum_q(i),
+
+                    result_b_real => accum_i(NUM_TAPS/2 + i),
+                    result_b_imag => accum_q(NUM_TAPS/2 + i)
+                );
             end generate;
 
             g2 : if i = NUM_TAPS/2-1 generate
-                mult_add_real(i) <= accum_i(i+1) when in_valid = '1' else (others => '0');
-                mult_add_imag(i) <= accum_q(i+1) when in_valid = '1' else (others => '0');
+                U_complex_mult_add : entity work.complex_mult_add
+                    port map(
+                        clock   => clock,
+                        reset   => reset or not enabled,
+
+                        sel => not in_valid,
+
+                        sample_valid => in_valid_fixed,
+                        sample_real => in_i_fixed,
+                        sample_imag => in_q_fixed,
+
+                        coeff_a_real => coeff_i(i),
+                        coeff_a_imag => coeff_q(i),
+
+                        coeff_b_real => coeff_i(NUM_TAPS/2 + i),
+                        coeff_b_imag => coeff_q(NUM_TAPS/2 + i),
+
+                        add_a_real => accum_i(i+1),
+                        add_a_imag => accum_q(i+1),
+
+                        add_b_real => to_signed(0, ACCUM_SCALE),
+                        add_b_imag => to_signed(0, ACCUM_SCALE),
+
+                        result_a_real => accum_i(i),
+                        result_a_imag => accum_q(i),
+
+                        result_b_real => accum_i(NUM_TAPS/2 + i),
+                        result_b_imag => accum_q(NUM_TAPS/2 + i)
+                    );
             end generate;
-
-            accum_i(i) <= mult_result_real(i) when rising_edge(clock) and in_valid_d = '1';
-            accum_q(i) <= mult_result_imag(i) when rising_edge(clock) and in_valid_d = '1';
-
-            accum_i(NUM_TAPS/2 + i) <= mult_result_real(i) when rising_edge(clock) and in_valid_d2 = '1';
-            accum_q(NUM_TAPS/2 + i) <= mult_result_imag(i) when rising_edge(clock) and in_valid_d2 = '1';
-
     end generate; 
-
-    -- Map the output registers directly
-    out_i <= resize(shift_right(accum_i(0),OUTPUT_SHIFT),out_i'length);
-    out_q <= resize(shift_right(accum_q(0),OUTPUT_SHIFT),out_q'length);
 
     mac : process(clock, reset)
     begin
@@ -178,6 +203,8 @@ begin
             in_q_d <= to_signed(0, in_q_d'length);
             in_valid_d <= '0';
             in_valid_d2 <= '0';
+            in_valid_d3 <= '0';
+            in_valid_d4 <= '0';
 
         elsif rising_edge(clock) then
             -- Delay input samples
@@ -185,7 +212,15 @@ begin
             in_q_d <= in_q;
             in_valid_d <= in_valid;
             in_valid_d2 <= in_valid_d;
-            out_valid  <= in_valid;
+            in_valid_d3 <= in_valid_d2;
+            in_valid_d4 <= in_valid_d3;
+            out_valid <= '0';
+
+            if in_valid = '1' then
+                out_q <= resize(shift_right(accum_q(0),OUTPUT_SHIFT),out_q'length);
+                out_i <= resize(shift_right(accum_i(0),OUTPUT_SHIFT),out_i'length);
+                out_valid <= '1';
+            end if;
         end if;
     end process;
 end architecture;
