@@ -46,19 +46,19 @@ static inline bool perform_read(uint8_t id, uint8_t addr, uint32_t *data)
             return false;
 
         case NIOS_PKT_8x32_TARGET_USR1:
-            *data = IORD_32DIRECT(RX_DDC_FILTER_BASE, addr);
+            *data = IORD_32DIRECT(RX_DDC_FILTER_BASE, addr*4);
             break;
 
         case NIOS_PKT_8x32_TARGET_USR1+1:
-            *data = IORD_32DIRECT(RX_DDC_ROTATOR_BASE, addr);
+            *data = IORD_32DIRECT(RX_DDC_ROTATOR_BASE, addr*4);
             break;
 
         case NIOS_PKT_8x32_TARGET_USR1+2:
-            *data = IORD_32DIRECT(RX_DDC_DECIMATOR_BASE, addr);
+            *data = IORD_32DIRECT(RX_DDC_DECIMATOR_BASE, addr*4);
             break;
 
         case NIOS_PKT_8x32_TARGET_USR1+3:
-            *data = IORD_32DIRECT(FFT_BASE, addr);
+            *data = IORD_32DIRECT(FFT_BASE, addr*4);
             break;
 
         default:
@@ -86,19 +86,19 @@ static inline bool perform_write(uint8_t id, uint8_t addr, uint32_t data)
             break;
 
         case NIOS_PKT_8x32_TARGET_USR1:
-            IOWR_32DIRECT(RX_DDC_FILTER_BASE, addr, data);
+            IOWR_32DIRECT(RX_DDC_FILTER_BASE, addr*4, data);
             break;
 
         case NIOS_PKT_8x32_TARGET_USR1+1:
-            IOWR_32DIRECT(RX_DDC_ROTATOR_BASE, addr, data);
+            IOWR_32DIRECT(RX_DDC_ROTATOR_BASE, addr*4, data);
             break;
 
         case NIOS_PKT_8x32_TARGET_USR1+2:
-            IOWR_32DIRECT(RX_DDC_DECIMATOR_BASE, addr, data);
+            IOWR_32DIRECT(RX_DDC_DECIMATOR_BASE, addr*4, data);
             break;
 
         case NIOS_PKT_8x32_TARGET_USR1+3:
-            IOWR_32DIRECT(FFT_BASE, addr, data);
+            IOWR_32DIRECT(FFT_BASE, addr*4, data);
             break;
 
         default:
