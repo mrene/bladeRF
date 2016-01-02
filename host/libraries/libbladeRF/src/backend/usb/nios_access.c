@@ -732,10 +732,10 @@ int nios_filter_set_coefficients(struct bladerf *dev, bladerf_module module, int
     switch (module) {
         case BLADERF_MODULE_RX:
             log_verbose("Setting RX filter coefficients\n");
-            for (size_t i = 0; i < len; i+=2) {
+            for (size_t i = 0; i < len/2; i++) {
                 log_verbose("Setting RX filter coefficient %d\n", i);
                 // uint32_t value = ((uint16_t)coefficients[i] << 16) | ((uint16_t)coefficients[i+1]);
-                uint32_t value = ((uint16_t)coefficients[i+1] << 16) | ((uint16_t)coefficients[i]);
+                uint32_t value = ((uint16_t)coefficients[2*i+1]) | ((uint16_t)coefficients[2*i] << 16);
 
                 status = nios_8x32_write(dev, NIOS_PKT_8x32_TARGET_USR1, 1 + i, value);
                 if (status != 0) {
