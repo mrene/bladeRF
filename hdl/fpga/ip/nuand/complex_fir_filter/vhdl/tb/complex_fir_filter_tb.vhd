@@ -190,6 +190,7 @@ begin
 
     tb : process
 		variable ts : unsigned(63 downto 0) := (others =>'0') ;
+        variable reg : std_logic_vector(31 downto 0);
     begin
 
         reset <= '1' ;
@@ -204,7 +205,9 @@ begin
         end loop;
 
         -- Enable module
-        mm_write(clock, avs_config_address, avs_config_writedata, avs_config_write, to_unsigned(0, 8), to_unsigned(1, 32)) ;
+        reg(31 downto 24) := std_logic_vector(to_unsigned(12, 8));
+        reg(0) := '1';
+        mm_write(clock, avs_config_address, avs_config_writedata, avs_config_write, to_unsigned(0, 8), unsigned(reg)) ;
 
         -- Make sure we can read the same thing
         --ts := to_unsigned(0, ts'length);
