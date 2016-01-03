@@ -149,7 +149,7 @@ begin
     generic map (
         LOG2_FFT_LEN => 10)
     port map (
-        rst_n     => not ((reset or fft_reset) and not fft_enable),
+        rst_n     => not ((reset or fft_reset) or not fft_enable),
         clk       => clock,
         din       => sample_din,
         din_valid => asi_in_valid,
