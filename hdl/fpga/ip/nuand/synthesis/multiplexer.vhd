@@ -42,6 +42,7 @@ entity multiplexer is
         -- Output clock domain
         clock : in std_logic ;
         reset : in std_logic ;
+
         data : out std_logic_vector(31 downto 0) ;
         valid : out std_logic ;
 
@@ -109,7 +110,7 @@ begin
         fifos(i).wreq <= inputs(i).valid;
 
         fifos(i).rclock <= clock ;
-        fifos(i).aclr <= '0';
+        fifos(i).aclr <= (not inputs(i).enabled) or reset;
         fifos(i).rreq <= current_rreq when stream_id = i else '0';
 
         --flaghandler : process(inputs(i).clock, rst)
