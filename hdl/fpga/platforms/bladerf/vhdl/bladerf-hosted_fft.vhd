@@ -1081,6 +1081,8 @@ begin
         rfull  => rx_processing_fifo.rfull,
         rused  => rx_processing_fifo.rused
      );
+      
+    rx_processing_fifo.aclr <= rx_reset;
 
     -- Send the input sample stream down to the right chains
 
