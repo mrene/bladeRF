@@ -57,6 +57,9 @@ architecture rtl of decimator is
 	signal div_denom   : std_logic_vector(15 downto 0);
 	signal div_remain_i, div_remain_q  : std_logic_vector(15 downto 0);
 	signal out_valid_d0, out_valid_d1, out_valid_d2  : std_logic;
+	signal out_valid_d3, out_valid_d4, out_valid_d5  : std_logic;
+	signal out_valid_d6, out_valid_d7, out_valid_d8  : std_logic;
+	signal out_valid_d9, out_valid_d10, out_valid_d11  : std_logic;
 begin
 
 	-- Manually instanciate lpm_divide to specify the LPM_PIPELINE parameter
@@ -64,7 +67,7 @@ begin
 		generic map (
 			LPM_WIDTHN   => 32, -- Width of numer and quotient
 			LPM_WIDTHD   => 16, -- Width of denom and remain
-			LPM_PIPELINE => 3,   -- Clock cycles before output is valid,
+			LPM_PIPELINE => 12,   -- Clock cycles before output is valid,
 			LPM_NREPRESENTATION => "SIGNED",
 			LPM_DREPRESENTATION => "UNSIGNED"
 		)
@@ -82,7 +85,7 @@ begin
 		generic map (
 			LPM_WIDTHN   => 32, -- Width of numer and quotient
 			LPM_WIDTHD   => 16, -- Width of denom and remain
-			LPM_PIPELINE => 3,   -- Clock cycles before output is valid
+			LPM_PIPELINE => 12,   -- Clock cycles before output is valid
 			LPM_NREPRESENTATION => "SIGNED",
 			LPM_DREPRESENTATION => "UNSIGNED"
 		)
@@ -118,13 +121,33 @@ begin
 			out_valid_d0 <= '0';
 			out_valid_d1 <= '0';
 			out_valid_d2 <= '0';
+			out_valid_d3 <= '0';
+			out_valid_d4 <= '0';
+			out_valid_d5 <= '0';
+			out_valid_d6 <= '0';
+			out_valid_d7 <= '0';
+			out_valid_d8 <= '0';
+			out_valid_d9 <= '0';
+			out_valid_d10 <= '0';
+			out_valid_d11 <= '0';
+
 
 			div_numer_i <= (others => '0');
 			div_numer_q <= (others => '0');
 		elsif rising_edge(clock) then
 
 			-- Sample delays
-			out_valid <= out_valid_d2;
+			out_valid <= out_valid_d11;
+
+			out_valid_d11 <= out_valid_d10;
+			out_valid_d10 <= out_valid_d9;
+			out_valid_d9 <= out_valid_d8;
+			out_valid_d8 <= out_valid_d7;
+			out_valid_d7 <= out_valid_d6;
+			out_valid_d6 <= out_valid_d5;
+			out_valid_d5 <= out_valid_d4;
+			out_valid_d4 <= out_valid_d3;
+			out_valid_d3 <= out_valid_d2;
 			out_valid_d2 <= out_valid_d1;
 			out_valid_d1 <= out_valid_d0;
 
