@@ -702,6 +702,10 @@ int nios_filter_enable(struct bladerf *dev, bladerf_module module, bool enable)
 {
     int status = BLADERF_ERR_INVAL;
     uint32_t value = (uint8_t)enable;
+
+    uint8_t shift_value = 12;
+    value |= shift_value << 24;
+
     switch (module) {
         case BLADERF_MODULE_RX:
             log_verbose("Setting RX filter enable: %s\n", enable ? "true" : "false");
@@ -719,6 +723,7 @@ int nios_filter_enable(struct bladerf *dev, bladerf_module module, bool enable)
 
     return status;
 }
+
 
 int nios_filter_set_coefficients(struct bladerf *dev, bladerf_module module, int16_t *coefficients, size_t len)
 {
