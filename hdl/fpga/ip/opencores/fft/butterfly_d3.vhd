@@ -78,7 +78,7 @@ begin  -- beh1
       valid_del  <= '0';
       valid_del2 <= '0';
       valid <= '0';
-    elsif clk'event and clk = '1' then  -- rising clock edge
+    elsif rising_edge(clk) then  -- rising clock edge
       -- delayed by 1 clock
       vdr1      <= resize(din0.re, ICPX_WIDTH+1) - resize(din1.re, ICPX_WIDTH+1);
       vdi1      <= resize(din0.im, ICPX_WIDTH+1) - resize(din1.im, ICPX_WIDTH+1);
