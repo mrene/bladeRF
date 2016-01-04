@@ -82,6 +82,7 @@ architecture hosted_bladerf_fft of bladerf is
         rx_mux_in_data                  : in  std_logic_vector(31 downto 0) ;
         rx_mux_in_valid                 : in  std_logic ;
 
+        rx_mux_out_ready                : in std_logic ;
         rx_mux_out_data                 : out std_logic_vector(31 downto 0) ;
         rx_mux_out_valid                : out std_logic 
       );
@@ -299,6 +300,7 @@ architecture hosted_bladerf_fft of bladerf is
     signal rx_mux_in_data   : std_logic_vector(31 downto 0) ;
     signal rx_mux_in_valid  : std_logic ;
 
+    signal rx_mux_out_ready : std_logic ;
     signal rx_mux_out_data  : std_logic_vector(31 downto 0) ;
     signal rx_mux_out_valid : std_logic ;
 
@@ -894,6 +896,7 @@ begin
         rx_fft_in_valid                 => rx_fft_in_valid,
         rx_mux_in_data                  => rx_mux_in_data,
         rx_mux_in_valid                 => rx_mux_in_valid,
+        rx_mux_out_ready                => rx_mux_out_ready,
         rx_mux_out_data                 => rx_mux_out_data,
         rx_mux_out_valid                => rx_mux_out_valid
       ) ;
@@ -1102,6 +1105,11 @@ begin
     rx_processed_sample_i <= signed(rx_mux_out_data(31 downto 16));
     rx_processed_sample_q <= signed(rx_mux_out_data(15 downto 0));
     rx_processed_sample_valid <= rx_mux_out_valid;
+
+    -- Make sure we have enough space in the output fifo for an entire packet
+    -- There is a capacity of 4096 words (of 32 bits wide). Since our packets
+    -- are 256 bytes (64 words) long (+ a 4 byte header (1 word)) 
+    rx_mux_out_ready <= '1' when unsigned(rx_sample_fifo.wused) < to_unsigned(4096 - 64 - 1, rx_sample_fifo.wused'length) else '0';
 
 end architecture ; -- arch
 

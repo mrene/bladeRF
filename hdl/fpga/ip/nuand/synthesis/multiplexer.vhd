@@ -43,6 +43,7 @@ entity multiplexer is
         clock : in std_logic ;
         reset : in std_logic ;
 
+        ready : in std_logic ;
         data : out std_logic_vector(31 downto 0) ;
         valid : out std_logic ;
 
@@ -152,7 +153,9 @@ begin
                         stream_id <= stream_id + 1;
                     end if;
 
-                    state <= ST_CHECK;
+                    if ready = '1' then
+                        state <= ST_CHECK;
+                    end if;
 
                 when ST_CHECK =>
                     -- Switch to the header state if this stream contains pending data

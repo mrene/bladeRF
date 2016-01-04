@@ -41,7 +41,8 @@ entity multiplexer_controller is
 
         -- Avalon-ST Source (Output)
         aso_out_data          : out std_logic_vector(31 downto 0);
-        aso_out_valid         : out std_logic; 
+        aso_out_valid         : out std_logic;
+        aso_out_ready         : in std_logic;
 
         -- Avalon-MM Slave
         avs_config_address       : in  std_logic_vector(ADDR_WIDTH-1 downto 0);
@@ -67,6 +68,7 @@ begin
 
 			data => aso_out_data,
 			valid => aso_out_valid,
+            ready => aso_out_ready,
 
 			-- All inputs are coming from the same clock domain right now
 			inputs(0).clock => clock,
